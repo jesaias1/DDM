@@ -1,0 +1,65 @@
+========================================================
+  DEN DANSKE METODE - HURTIG HUSKELISTE
+  (kort version - den fulde guide er KOM_GODT_IGANG_D1.txt)
+========================================================
+
+NAAR DU STARTER PAA STATIONAEREN:
+
+  1. Pak zip ud.
+
+  2. Installer (kun foerste gang):
+        .\INSTALL_DDM.ps1
+     (Python skal vaere installeret paa maskinen i forvejen.)
+
+  3. Opret dine noegler FRISKT her paa stationaeren:
+        - kopier DDM_ENV_TEMPLATE.ps1  ->  .env.local.ps1
+        - udfyld EXCHANGE_API_KEY og EXCHANGE_API_SECRET
+        - Coinbase-noegle: VIEW + TRADE, ALDRIG withdraw
+
+  4. Saet penge ind paa Coinbase (fx 200 kr).
+
+  5. Tjek at alt er klar:
+        . .\.env.local.ps1
+        python check_live.py        ->  skal vise "KLAR"
+
+  6. Naar du vil gaa live: i .env.local.ps1 fjern # foran:
+        $env:DDM_LIVE = "1"
+        $env:DDM_LIVE_ARMED = "JEG_FORSTAAR_RISIKOEN"
+     Kor check_live.py igen -> "KLAR".
+
+  7. Start:
+        .\START_DDM.ps1
+        Log ind (jesaias / miebs112)
+        Auto-trader -> Preflight -> Readiness groen -> Autonom drift -> Start
+
+
+--------------------------------------------------------
+HVORNAAR STOPPER BOTTEN?
+--------------------------------------------------------
+  Den styres af PENGE og dine graenser - IKKE tokens.
+
+  - Krypto-botten bruger 0 AI-tokens. Kan ikke loebe toer for tokens.
+  - Den stopper handel selv ved:  -5% paa en dag  eller  -10% i alt.
+  - Lav saldo = den aabner bare ingen nye handler (ingen fejl).
+  - Du kan altid stoppe: Stop paa Autonom drift, eller KILL SWITCH.
+
+  (Tokens bruges KUN hvis du selv taender AI-sports-research i Settings.
+   Det har sit eget dagsbudget og roerer ikke krypto-botten.)
+
+
+--------------------------------------------------------
+SAADAN HAEVER DU PENGE
+--------------------------------------------------------
+  Du logger selv ind paa Coinbase og haever - naar som helst.
+  "Aldrig withdraw" paa noeglen stopper kun BOTTEN i at flytte
+  penge ud. DIG stopper det aldrig.
+
+
+--------------------------------------------------------
+HUSK
+--------------------------------------------------------
+  - Kun penge du kan undvaere. Det er underholdning, ikke en plan
+    om sikker profit.
+  - Stationaeren skal vaere taendt og have internet mens den koerer.
+  - I tvivl? Tryk KILL SWITCH foerst, saa Stop.
+========================================================
