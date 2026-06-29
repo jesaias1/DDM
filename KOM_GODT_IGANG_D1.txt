@@ -1,0 +1,101 @@
+========================================================
+  DEN DANSKE METODE - KOM GODT I GANG D. 1
+  5 trin fra Coinbase-noegle til den koerer
+========================================================
+
+Maalet: en sjovere, sikrere maade at gamble paa - ikke sikre penge.
+Regel nr. 1: brug KUN penge du kan undvaere. Se det som underholdning.
+
+
+--------------------------------------------------------
+TRIN 1 - Foer du goer noget: proev toer-koersel
+--------------------------------------------------------
+(Kan springes over, men anbefales en uges tid foerst.)
+
+  .\INSTALL_DDM.ps1        (kun foerste gang)
+  .\START_DDM.ps1
+  Aabn http://127.0.0.1:5000  ->  log ind: jesaias / miebs112
+
+Gaa til fanen "Auto-trader" -> "Autonom drift" -> Start.
+Saadan ser du den arbejde HELT uden risiko (ingen rigtige penge).
+Den bliver ikke "bedre" af at koere laenge - det er kun saa DU kan se den.
+
+
+--------------------------------------------------------
+TRIN 2 - Opret Coinbase API-noegle (det vigtigste)
+--------------------------------------------------------
+Paa Coinbase (Advanced Trade) -> Settings -> API:
+
+  - Opret ny API-noegle.
+  - Rettigheder: VIEW + TRADE.
+  - ALDRIG "withdraw" / "transfer" / "send".
+    (Saa kan hverken koden, en fejl eller en hacker tage dine penge.)
+  - Gem "API key" og "API secret" et sikkert sted.
+
+
+--------------------------------------------------------
+TRIN 3 - Saet penge ind paa Coinbase
+--------------------------------------------------------
+  - Indbetal fx 200 kr (~27 EUR) via MobilePay/kort/bank, ELLER
+  - Send krypto til din Coinbase-adresse (fanen "Indbetal" i appen).
+  - Smaa beloeb = smaa handler (~5 EUR ad gangen). Gebyrer fylder
+    mere paa smaa beloeb - endnu en grund til at se det som sjov.
+
+
+--------------------------------------------------------
+TRIN 4 - Udfyld dine noegler og kor tjekket
+--------------------------------------------------------
+1) Kopier DDM_ENV_TEMPLATE.ps1 til .env.local.ps1 (hvis ikke gjort).
+
+2) Aabn .env.local.ps1 og udfyld:
+     $env:EXCHANGE_API_KEY = "din key"
+     $env:EXCHANGE_API_SECRET = "din secret"
+   Lad DDM_LIVE og DDM_LIVE_ARMED vaere kommenteret ud ENDNU.
+
+3) I PowerShell i mappen, indlaes noeglerne og kor tjekket:
+     . .\.env.local.ps1
+     python check_live.py
+
+   Du faar groent "KLAR" foerst naar ALT er paa plads.
+   I dette trin er det normalt at se nogle [FEJL] (live er ikke armet endnu).
+
+
+--------------------------------------------------------
+TRIN 5 - Arm live og start
+--------------------------------------------------------
+1) I .env.local.ps1, fjern # foran disse to linjer:
+     $env:DDM_LIVE = "1"
+     $env:DDM_LIVE_ARMED = "JEG_FORSTAAR_RISIKOEN"
+
+2) Kor tjekket igen - skal nu vaere groent:
+     . .\.env.local.ps1
+     python check_live.py        ->  "KLAR"
+
+3) Start appen og start den autonome drift:
+     .\START_DDM.ps1
+     Log ind -> Auto-trader -> kor "Preflight" -> "Readiness" groen
+     -> "Autonom drift" -> Start.
+
+Nu koerer den selv paa din stationaere, ogsaa naar browseren er lukket.
+
+
+--------------------------------------------------------
+SIKKERHEDSNET (allerede slaaet til)
+--------------------------------------------------------
+  - Canary: foerste koeb maks ~10 EUR.
+  - Maks 25 EUR pr. ordre, maks 2 koeb/dag, maks 2 positioner.
+  - Stop-loss -8% + trailing stop paa hver handel.
+  - Risikobremse: stopper handel ved -5%/dag eller -10%/total.
+  - KILL SWITCH: knappen "Saelg alt" lukker alt med det samme.
+
+Stop helt: tryk Stop paa Autonom drift, og luk vinduet.
+I noedstilfaelde: KILL SWITCH foerst, saa Stop.
+
+
+--------------------------------------------------------
+HUSK
+--------------------------------------------------------
+Den lover ikke profit. Chancen for plus er lav, men hoejere end en
+slotmaskine - og du beholder kontrol over pengene. Gaa ind med et
+beloeb du kan tabe helt, og nyd det som en klogere, sikrere gamble.
+========================================================
