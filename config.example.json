@@ -1,0 +1,25 @@
+{
+  "_kommentar": "Sæt disse som miljøvariabler. Alt virker UDEN dem (demo + simulering + tør-kørsel).",
+  "DDM_USER": "valgfri — login-brugernavn (standard: jesaias)",
+  "DDM_PASS": "valgfri — login-adgangskode (standard: miebs112)",
+  "ODDS_API_KEY": "valgfri — gratis nøgle fra https://the-odds-api.com for ægte live-odds",
+  "ANTHROPIC_API_KEY": "valgfri — aktiverer AI-research (Claude web-researcher hver kamp). Koster penge pr. kald.",
+  "SMARTSTAKE_MODEL": "valgfri — model til AI-research, fx claude-haiku-4-5 for at spare. Standard: claude-opus-4-8",
+
+  "_auto_trader": "Kun for RIGTIG krypto-handel. Uden disse kører auto-traderen i tør-kørsel.",
+  "EXCHANGE_ID": "valgfri — ccxt-børsnavn, fx coinbase (standard), kraken, binance",
+  "EXCHANGE_API_KEY": "din børs-API-nøgle — opret med trade + (valgfrit) funding/deposit. ALDRIG withdraw",
+  "EXCHANGE_API_SECRET": "din børs-API-secret",
+  "EXCHANGE_API_PASSPHRASE": "kun hvis din børs/API-type kræver passphrase/password",
+  "DDM_LIVE": "sæt til \"1\" for at gå LIVE med rigtige ordrer. Ellers tør-kørsel.",
+  "DDM_LIVE_ARMED": "ekstra sikkerhed: skal være \"JEG_FORSTAAR_RISIKOEN\" før live-ordrer sendes",
+  "DDM_QUOTE": "valgfri — kvotevaluta, standard EUR",
+  "DDM_UNIVERSE": "valgfri — kommaseparerede handelspar, fx BTC/EUR,ETH/EUR,SOL/EUR",
+  "DDM_FEE": "valgfri — gebyr pr. handel som decimal, standard 0.006",
+  "DDM_TREND_LEN": "valgfri — SMA trendfilter i dage, standard 50",
+  "DDM_TRAIL": "valgfri — trailing stop fra top, standard 0.12",
+  "DDM_STOP_LOSS": "valgfri — hård stop-loss, standard -0.08",
+  "DDM_DAILY_LOSS_LIMIT": "valgfri — stop hele botten ved dagligt tab, standard -0.05",
+  "DDM_TOTAL_LOSS_LIMIT": "valgfri — stop hele botten ved samlet tab, standard -0.10",
+  "DDM_AUTO_FLATTEN_ON_HALT": "valgfri — sæt til 1 for at lukke åbne positioner når tabsloft rammes"
+}

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Log ind — Den Danske Metode</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+         font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+         background: radial-gradient(1200px 600px at 50% -10%, #15233a 0%, #0b0f14 60%); color: #e6edf3; }
+  .card { width: 340px; background: #11161d; border: 1px solid #222b36; border-radius: 16px;
+          padding: 32px 28px; box-shadow: 0 20px 60px rgba(0,0,0,.45); }
+  .logo { font-size: 22px; font-weight: 800; text-align: center; margin-bottom: 4px; }
+  .sub { text-align: center; color: #8b949e; font-size: 13px; margin-bottom: 24px; }
+  label { display: block; font-size: 12px; color: #8b949e; margin: 14px 0 6px; }
+  input { width: 100%; padding: 11px 12px; border-radius: 9px; border: 1px solid #2a333f;
+          background: #0b0f14; color: #e6edf3; font-size: 14px; }
+  input:focus { outline: none; border-color: #2f81f7; }
+  button { width: 100%; margin-top: 22px; padding: 12px; border: 0; border-radius: 9px;
+           background: #2f81f7; color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; }
+  button:hover { background: #4090ff; }
+  .error { background: #2d1416; border: 1px solid #5a1f23; color: #ff9a9a; padding: 10px 12px;
+           border-radius: 8px; font-size: 13px; margin-top: 16px; }
+</style>
+</head>
+<body>
+  <form class="card" method="post">
+    <div class="logo">Den Danske Metode</div>
+    <div class="sub">AI-handel & beslutningsmotor</div>
+    <label>Brugernavn</label>
+    <input name="username" autocomplete="username" autofocus>
+    <label>Adgangskode</label>
+    <input name="password" type="password" autocomplete="current-password">
+    {% if error %}<div class="error">{{ error }}</div>{% endif %}
+    <button type="submit">Log ind</button>
+  </form>
+</body>
+</html>

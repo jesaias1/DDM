@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+data/*.json
+data/*.json.tmp
+data/secret.key
+server*.log
+config.json
+.env.local.ps1
+dist/
+.venv/
