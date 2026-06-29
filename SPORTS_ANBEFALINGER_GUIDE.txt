@@ -19,10 +19,17 @@ HVAD DU SKAL BRUGE
 2) ODDS_API_KEY (gratis fra the-odds-api.com)
    - Henter aegte live-odds. Uden den koerer den paa demo-kampe.
 
-3) DDM_SPORT (hvilken turnering)
-   - VM:             soccer_fifa_world_cup
-   - Premier League: soccer_epl  (standard)
+3) DDM_SPORT (hvad der scannes) - STANDARD: "all"
+   - "all"  = ALLE aktive sportsgrene (fodbold, tennis, basket, e-sport ...)
+              -> finder de bedste value-bets paa tvaers af alt.
+   - komma-liste, fx "soccer_epl,tennis_atp,esports_csgo"
+   - en enkelt, fx "soccer_fifa_world_cup" (kun VM)
    - Se alle "sport keys" paa the-odds-api.com/sports-list
+
+   OBS kvote: "all" henter odds for mange sportsgrene = mange API-kald.
+   the-odds-api gratis = ~500 kald/maaned. Lofter (kan saettes som env):
+     DDM_MAX_SPORTS=40   DDM_MAX_MATCHES=60   DDM_MAX_AI_MATCHES=15
+   Vil du spare kvote/tokens: brug en komma-liste i stedet for "all".
 
 
 --------------------------------------------------------
@@ -30,7 +37,7 @@ SAET DET OP (i .env.local.ps1)
 --------------------------------------------------------
    $env:ANTHROPIC_API_KEY = "din-claude-key"
    $env:ODDS_API_KEY = "din-odds-key"
-   $env:DDM_SPORT = "soccer_fifa_world_cup"
+   $env:DDM_SPORT = "all"     # eller fx "soccer_fifa_world_cup,tennis_atp"
 
 Genstart appen:  .\START_DDM.ps1
 
@@ -45,13 +52,16 @@ BRUG DET
    - Indtast din saldo (det du vil fordele paa bets).
    - Tryk "Beregn anbefalinger".
 
-3) Laes hver linje:
-   - Vores %  = bottens eget bud paa sandsynligheden for udfaldet
-   - Marked % = bookmakerens (margin fjernet)
-   - odds     = oddset
-   - Value    = hvor stor kant den mener der er (+ = value)
-   - Andel    = hvor stor del af din saldo den foreslaar (Kelly)
-                Hoejere andel = mere overbevist + mere value.
+3) Listen er sorteret efter BEDSTE VALUE oeverst. Kolonner:
+   - Kamp/coin = udfaldet den anbefaler
+   - Sport     = hvilken sportsgren (fodbold, tennis, e-sport ...)
+   - Vind%     = bottens eget bud paa chancen for at vinde
+   - Odds      = oddset
+   - Value     = kant = Vind% gange odds minus 1 (+ = value, oeverst = bedst)
+   - Indsats   = foreslaaet beloeb (Kelly, ud fra din saldo)
+
+   "Bedste odds OG bedste vind%" traekker hver sin vej - value er den
+   aerlige kombination af de to. Derfor sorteres der efter value.
 
 4) Vil du spille det: gaa selv ind hos din bookmaker (fx Betano)
    og placer vaeddemaalet manuelt med det foreslaaede beloeb.

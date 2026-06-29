@@ -106,17 +106,24 @@ def _budget_allows_call(usage: dict, cfg: dict) -> bool:
     return calls < call_limit and tokens < token_budget
 
 
-def estimate_probabilities(match: dict, market_probs: list[float]) -> list[float]:
+def estimate_probabilities(match: dict, market_probs: list[float],
+                           outcomes: list[str] | None = None) -> list[float]:
     """
-    Returnér [p_home, p_draw, p_away] — AI'ens uafhængige bud efter web-research.
-    Falder altid tilbage til markedet ved manglende nøgle eller fejl, så motoren
-    aldrig går i stå.
+    AI'ens uafhængige sandsynlighedsbud efter research — for ENHVER sportsgren.
+    Virker med 2 udfald (tennis, e-sport, basket) eller 3 (fodbold m. uafgjort).
+    Returnerer en liste i SAMME rækkefølge som `outcomes`. Falder altid tilbage
+    til markedet ved manglende nøgle, budget eller fejl, så motoren aldrig går i stå.
     """
+    n = len(market_probs)
+    if not outcomes or len(outcomes) != n:
+        outcomes = (["Hjemmesejr", "Uafgjort", "Udesejr"] if n == 3
+                    else [match.get("home", "Udfald 1"), match.get("away", "Udfald 2")])[:n]
+
     cfg = settings.load()
     usage = _load_usage()
     key = _cache_key(match, market_probs)
     cached = usage.get("cache", {}).get(key)
-    if cached:
+    if cached and len(cached) == n:
         return cached
 
     if not available() or not _budget_allows_call(usage, cfg):
@@ -125,19 +132,22 @@ def estimate_probabilities(match: dict, market_probs: list[float]) -> list[float
     client = anthropic.Anthropic()
     web_search = bool(cfg.get("ai_web_search_enabled", settings.PUBLIC_DEFAULTS["ai_web_search_enabled"]))
     max_tokens = int(cfg.get("ai_max_tokens_per_call", settings.PUBLIC_DEFAULTS["ai_max_tokens_per_call"]))
+    sport = match.get("sport", "sport")
+    out_lines = "\n".join(f"  {i+1}. {name}: marked {market_probs[i]:.3f}"
+                          for i, name in enumerate(outcomes))
+    example = "[" + ", ".join("0.xx" for _ in outcomes) + "]"
     prompt = (
-        f"Du er en kvantitativ fodboldanalytiker. Research denne kamp grundigt med "
-        f"{'web-søgning' if web_search else 'kort, konservativ analyse uden web-søgning'} "
-        f"og giv dit eget bud på sandsynligheden for hvert udfald.\n\n"
-        f"Kamp: {match['home']} (hjemme) vs {match['away']} (ude)\n\n"
-        f"Søg efter og vægt: aktuel form, skader/karantæner, forventede opstillinger, "
-        f"indbyrdes opgør, hjemmebanefordel og relevante nyheder.\n\n"
-        f"Til reference er markedets implicitte sandsynligheder (bookmaker-margin "
-        f"fjernet): hjemme {market_probs[0]:.3f}, uafgjort {market_probs[1]:.3f}, "
-        f"ude {market_probs[2]:.3f}. Afvig kun fra markedet hvor din research giver "
-        f"en konkret grund — kopiér ikke bare tallene.\n\n"
-        f"Afslut dit svar med PRÆCIS én linje ren JSON og intet andet på den linje:\n"
-        f'{{"home": x, "draw": y, "away": z}}  (x+y+z skal være 1.0)'
+        f"Du er en kvantitativ sportsanalytiker. Vurdér sandsynligheden for hvert "
+        f"udfald i denne kamp med "
+        f"{'web-søgning' if web_search else 'kort, konservativ analyse uden web-søgning'}.\n\n"
+        f"Sport/turnering: {sport}\n"
+        f"Kamp: {match.get('home', '?')} vs {match.get('away', '?')}\n\n"
+        f"Udfald og markedets implicitte sandsynligheder (bookmaker-margin fjernet):\n"
+        f"{out_lines}\n\n"
+        f"Vægt relevant: form, skader/fravær, opstilling, indbyrdes opgør og nyheder. "
+        f"Afvig kun fra markedet hvor din research giver en konkret grund — kopiér ikke tallene.\n\n"
+        f"Afslut med PRÆCIS én linje ren JSON: en liste med {n} tal i SAMME rækkefølge "
+        f"som udfaldene ovenfor, der summer til 1.0. Fx: {example}"
     )
 
     try:
@@ -181,16 +191,32 @@ def estimate_probabilities(match: dict, market_probs: list[float]) -> list[float
 
 
 def _parse_probs(text: str, fallback: list[float]) -> list[float]:
-    """Træk det sidste JSON-objekt ud af svaret og normalisér til sum 1."""
-    start, end = text.rfind("{"), text.rfind("}") + 1
-    if start < 0 or end <= start:
-        return fallback
-    try:
-        data = json.loads(text[start:end])
-        probs = [float(data["home"]), float(data["draw"]), float(data["away"])]
-    except (json.JSONDecodeError, KeyError, ValueError):
-        return fallback
-    total = sum(probs)
-    if total <= 0:
-        return fallback
-    return [p / total for p in probs]
+    """
+    Læs AI'ens svar og normalisér til sum 1. Forventer en JSON-liste med samme
+    antal tal som fallback (rækkefølge-baseret). Falder tilbage til 3-vejs objekt
+    {home,draw,away} hvis modellen brugte det format.
+    """
+    n = len(fallback)
+    # 1) rækkefølge-baseret liste: [p1, p2, ...]
+    a, b = text.rfind("["), text.rfind("]") + 1
+    if 0 <= a < b:
+        try:
+            arr = [float(x) for x in json.loads(text[a:b])]
+            if len(arr) == n and sum(arr) > 0:
+                t = sum(arr)
+                return [p / t for p in arr]
+        except (json.JSONDecodeError, TypeError, ValueError):
+            pass
+    # 2) bagudkompatibelt 3-vejs objekt
+    if n == 3:
+        c, d = text.rfind("{"), text.rfind("}") + 1
+        if 0 <= c < d:
+            try:
+                data = json.loads(text[c:d])
+                probs = [float(data["home"]), float(data["draw"]), float(data["away"])]
+                t = sum(probs)
+                if t > 0:
+                    return [p / t for p in probs]
+            except (json.JSONDecodeError, KeyError, ValueError):
+                pass
+    return fallback

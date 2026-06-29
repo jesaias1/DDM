@@ -286,8 +286,11 @@
         <label>Min saldo <input type="number" id="realBalance" placeholder="vælg selv" min="0" step="50"> kr</label>
         <button class="btn" onclick="getSignals()">Beregn anbefalinger</button>
       </div>
-      <table><thead><tr><th>Type</th><th>Anbefaling</th><th>Indsats</th><th>Andel</th><th>Begrundelse</th></tr></thead>
-        <tbody id="signals"><tr><td class="muted" colspan="5">Tryk "Beregn anbefalinger"</td></tr></tbody>
+      <p class="desc" style="margin-bottom:8px">Scanner <b>alle sportsgrene</b> (fodbold, tennis,
+        basket, e-sport ...) og rangerer efter bedste value. Tænd AI-research i Settings for at få
+        et uafhængigt bud — ellers vises ingen value (med vilje).</p>
+      <table><thead><tr><th>Kamp / coin</th><th>Sport</th><th>Vind%</th><th>Odds</th><th>Value</th><th>Indsats</th></tr></thead>
+        <tbody id="signals"><tr><td class="muted" colspan="6">Tryk "Beregn anbefalinger"</td></tr></tbody>
       </table>
     </div>
     <div class="card">
@@ -600,16 +603,21 @@ function copyAddr(){ const t=document.getElementById('addrText').textContent;
 async function getSignals(){
   const balance=parseFloat(document.getElementById('realBalance').value)||0;
   if(balance<=0){
-    document.getElementById('signals').innerHTML='<tr><td class="muted" colspan="5">Indtast en saldo først.</td></tr>';
+    document.getElementById('signals').innerHTML='<tr><td class="muted" colspan="6">Indtast en saldo først.</td></tr>';
     return;
   }
+  const tb=document.getElementById('signals');
+  tb.innerHTML='<tr><td class="muted" colspan="6">Scanner alle sportsgrene...</td></tr>';
   const r=await (await fetch('/api/signals',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({balance})})).json();
-  const tb=document.getElementById('signals');
+  const dash = v => (v===null||v===undefined) ? '–' : v;
   tb.innerHTML = r.actions.length ? r.actions.map(a =>
-    `<tr><td>${a.type}</td><td>${a.name}</td><td><b>${a.stake.toFixed(2)} kr</b></td>
-     <td>${a.andel_pct}%</td><td class="muted">${a.reason}</td></tr>`).join('')
-    : '<tr><td class="muted" colspan="5">Ingen muligheder med edge lige nu — behold pengene.</td></tr>';
+    `<tr><td>${a.name}</td><td class="muted">${a.sport||a.type}</td>
+     <td>${a.win_pct!==null&&a.win_pct!==undefined?a.win_pct+'%':'–'}</td>
+     <td>${dash(a.odds)}</td>
+     <td class="${(a.value_pct||0)>=0?'up':'down'}">${a.value_pct!==null&&a.value_pct!==undefined?(a.value_pct>=0?'+':'')+a.value_pct+'%':'–'}</td>
+     <td><b>${a.stake.toFixed(2)} kr</b></td></tr>`).join('')
+    : '<tr><td class="muted" colspan="6">Ingen value lige nu. Tænd AI-research i Settings — uden den finder den ingen edge (med vilje).</td></tr>';
 }
 
 // ---------- scheduler ----------

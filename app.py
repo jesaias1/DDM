@@ -145,6 +145,10 @@ def api_signals():
         "actions": [{
             "type": a["type"], "name": a["name"], "stake": a["stake_dkk"],
             "andel_pct": round(a["kelly_fraction"] * 100, 1),
+            "sport": a.get("sport", ""),
+            "odds": a.get("odds"),
+            "win_pct": round(a["p_ours"] * 100, 1) if a.get("p_ours") is not None else None,
+            "value_pct": round(a["value"] * 100, 1) if a.get("value") is not None else None,
             "reason": a.get("reason", ""),
         } for a in actions],
     })
