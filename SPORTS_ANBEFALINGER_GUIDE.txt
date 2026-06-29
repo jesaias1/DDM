@@ -1,0 +1,73 @@
+========================================================
+  DEN DANSKE METODE - SPORTS-ANBEFALINGER (fx VM)
+========================================================
+
+VIGTIGT FOERST:
+Botten satser ALDRIG paa fodbold automatisk (bettingsider forbyder bots).
+Denne del giver dig FORSLAG - du placerer selv vaeddemaalet manuelt hos
+en licenseret bookmaker. Og husk: der findes ingen "sikre" bets.
+
+
+--------------------------------------------------------
+HVAD DU SKAL BRUGE
+--------------------------------------------------------
+1) ANTHROPIC_API_KEY (Claude)
+   - Faar AI til at web-researche kampen og give et UAFHAENGIGT bud.
+   - UDEN denne kopierer den bare markedet -> finder ingen value.
+   - Koster AI-tokens (styres i Settings-fanen).
+
+2) ODDS_API_KEY (gratis fra the-odds-api.com)
+   - Henter aegte live-odds. Uden den koerer den paa demo-kampe.
+
+3) DDM_SPORT (hvilken turnering)
+   - VM:             soccer_fifa_world_cup
+   - Premier League: soccer_epl  (standard)
+   - Se alle "sport keys" paa the-odds-api.com/sports-list
+
+
+--------------------------------------------------------
+SAET DET OP (i .env.local.ps1)
+--------------------------------------------------------
+   $env:ANTHROPIC_API_KEY = "din-claude-key"
+   $env:ODDS_API_KEY = "din-odds-key"
+   $env:DDM_SPORT = "soccer_fifa_world_cup"
+
+Genstart appen:  .\START_DDM.ps1
+
+
+--------------------------------------------------------
+BRUG DET
+--------------------------------------------------------
+1) Log ind -> fanen "Settings" -> slaa AI-research TIL.
+   (Her styrer du ogsaa max AI-kald/dag og tokenbudget.)
+
+2) Fanen "Anbefalinger":
+   - Indtast din saldo (det du vil fordele paa bets).
+   - Tryk "Beregn anbefalinger".
+
+3) Laes hver linje:
+   - Vores %  = bottens eget bud paa sandsynligheden for udfaldet
+   - Marked % = bookmakerens (margin fjernet)
+   - odds     = oddset
+   - Value    = hvor stor kant den mener der er (+ = value)
+   - Andel    = hvor stor del af din saldo den foreslaar (Kelly)
+                Hoejere andel = mere overbevist + mere value.
+
+4) Vil du spille det: gaa selv ind hos din bookmaker (fx Betano)
+   og placer vaeddemaalet manuelt med det foreslaaede beloeb.
+
+
+--------------------------------------------------------
+AERLIGE FORBEHOLD
+--------------------------------------------------------
+- "Vores 60%" betyder stadig 40% chance for at tabe. Ikke sikkert.
+- Bookmakeren har allerede regnet skader/form/opstilling ind i oddsene,
+  saa selv "value" er usikkert.
+- Vinder du konsekvent, kan bookmakeren begraense din konto.
+- AI'en uden opdaterede opstillinger er ikke en perfekt model - se det
+  som et kvalificeret bud, ikke et orakel.
+- Brug ROFUS (rofus.nu) hvis spil bliver et problem.
+
+Kort: det er en klogere maade at vaelge bets paa end mavefornemmelse -
+ikke en pengemaskine.
+========================================================

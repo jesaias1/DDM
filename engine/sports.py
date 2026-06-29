@@ -18,11 +18,16 @@ baseline der IKKE foregiver at have edge, så du ikke bliver narret.
 Med en gratis nøgle fra the-odds-api.com henter den ægte live-odds. Uden nøgle
 kører den på demo-kampe, så hele maskineriet kan testes.
 """
+import os
 import requests
 from . import kelly
 from . import research
 
 ODDS_API_URL = "https://api.the-odds-api.com/v4/sports/{sport}/odds"
+
+# Hvilken sport/turnering der hentes odds for (the-odds-api "sport key").
+# VM: "soccer_fifa_world_cup". Premier League: "soccer_epl". Standard: env eller EPL.
+DEFAULT_SPORT = os.environ.get("DDM_SPORT", "soccer_epl")
 
 # Demo-kampe så modulet virker uden API-nøgle. Realistiske odds med ~6% margin.
 DEMO_MATCHES = [
@@ -35,8 +40,9 @@ DEMO_MATCHES = [
 ]
 
 
-def fetch_matches(api_key: str | None, sport: str = "soccer_epl") -> list[dict]:
+def fetch_matches(api_key: str | None, sport: str | None = None) -> list[dict]:
     """Hent live-kampe med odds, eller demo-kampe hvis ingen nøgle er sat."""
+    sport = sport or DEFAULT_SPORT
     if not api_key:
         return DEMO_MATCHES
     try:
