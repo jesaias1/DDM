@@ -123,6 +123,24 @@
   .step { display:flex; gap:11px; margin-top:11px; align-items:flex-start; }
   .step .n { flex:0 0 25px; height:25px; border-radius:50%; background:var(--blue); color:#fff;
              display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; }
+
+  /* "programmet kører"-animationer */
+  .spinner { width:13px; height:13px; border:2px solid rgba(255,255,255,.25); border-top-color:#fff;
+             border-radius:50%; display:inline-block; vertical-align:-2px; animation:spin .7s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .dots::after { content:''; display:inline-block; width:1.2em; text-align:left;
+                 animation:dots 1.2s steps(4,end) infinite; }
+  @keyframes dots { 0%{content:''} 25%{content:'.'} 50%{content:'..'} 75%{content:'...'} }
+  .actbar { height:7px; border-radius:7px; background:var(--panel2); overflow:hidden;
+            margin-top:14px; position:relative; display:none; }
+  .actbar.on { display:block; }
+  .actbar > span { position:absolute; left:-38%; width:38%; height:100%; border-radius:7px;
+                   background:linear-gradient(90deg, transparent, var(--blue), transparent);
+                   animation:sweep 1.25s ease-in-out infinite; }
+  @keyframes sweep { 0%{left:-38%} 100%{left:100%} }
+  .countdown { font-size:15px; font-weight:700; color:var(--green); margin-top:10px; display:flex;
+               align-items:center; gap:8px; }
+  .countdown.idle { color:var(--muted); font-weight:500; }
 </style>
 </head>
 <body>
@@ -170,7 +188,9 @@
         Det er den ægte "sæt op og glem".</p>
       <div class="note info" style="margin-bottom:14px">Status: <b id="schedState">indlæser…</b>
         <span class="muted" id="schedTiming"></span><br>
-        <span class="muted" id="heartbeatText">Server heartbeat: venter...</span></div>
+        <span class="muted" id="heartbeatText">Server heartbeat: venter...</span>
+        <div class="countdown idle" id="schedCountdown">Tryk "Start autonom" for at lade den køre selv.</div>
+        <div class="actbar" id="actBar"><span></span></div></div>
       <div class="row">
         <button class="btn" onclick="schedStart()">Start autonom</button>
         <button class="btn ghost" onclick="schedStop()">Stop</button>
@@ -415,6 +435,10 @@ const kr = n => (n>=0?'':'-') + Math.abs(n).toFixed(2);
 const fmtTime = ts => ts ? new Date(ts*1000).toLocaleTimeString('da-DK') : '–';
 let currentSimStarting = 100;
 let currentLiveEquity = 0;
+// fælles "kører"-tilstand til animationerne
+let schedCache = { running:false, online:true, interval:60, next_run:null, last_run:null };
+let busy = 0;
+function setBusy(d){ busy = Math.max(0, busy + d); tick(); }
 const fmtDuration = seconds => {
   seconds = Math.max(0, Math.floor(seconds || 0));
   const h = Math.floor(seconds / 3600), m = Math.floor((seconds % 3600) / 60), s = seconds % 60;
@@ -449,8 +473,11 @@ async function refresh() {
 }
 let simAuto=null;
 async function cycle() {
-  const r = await (await fetch('/api/cycle',{method:'POST'})).json();
-  document.getElementById('log').textContent = r.log.join('\n'); refresh();
+  setBusy(1);
+  try {
+    const r = await (await fetch('/api/cycle',{method:'POST'})).json();
+    document.getElementById('log').textContent = r.log.join('\n'); await refresh();
+  } finally { setBusy(-1); }
 }
 async function scanSignals(){
   const d=await (await fetch('/api/diagnostics')).json();
@@ -583,8 +610,11 @@ async function refreshLive(){
     : '<tr><td class="muted" colspan="6">Ingen åbne positioner</td></tr>';
 }
 async function liveCycle(){
-  const r=await (await fetch('/api/live/cycle',{method:'POST'})).json();
-  document.getElementById('liveLog').textContent=(r.live?'[LIVE] ':'[TØR-KØRSEL] ')+r.log.join('\n'); refreshLive();
+  setBusy(1);
+  try {
+    const r=await (await fetch('/api/live/cycle',{method:'POST'})).json();
+    document.getElementById('liveLog').textContent=(r.live?'[LIVE] ':'[TØR-KØRSEL] ')+r.log.join('\n'); await refreshLive();
+  } finally { setBusy(-1); }
 }
 function toggleLiveAuto(){ const b=document.getElementById('liveAutoBtn');
   if(liveAuto){clearInterval(liveAuto);liveAuto=null;b.textContent='Auto (30s)';}
@@ -661,23 +691,63 @@ async function getSignals(){
 
 // ---------- scheduler ----------
 async function refreshHealth(){
-  const pill=document.getElementById('runPill');
-  const text=document.getElementById('runText');
   const hb=document.getElementById('heartbeatText');
   try{
     const h=await (await fetch('/api/health')).json();
-    const running=!!(h.scheduler&&h.scheduler.running);
-    pill.className='runpill '+(running?'ok':'warn');
-    text.textContent=running?'Kører autonomt':'Server aktiv';
+    schedCache.online=true;
+    schedCache.running=!!(h.scheduler&&h.scheduler.running);
     hb.textContent=`Server heartbeat: ${new Date(h.server_time*1000).toLocaleTimeString('da-DK')} · uptime ${fmtDuration(h.uptime_seconds)}`;
   }catch(e){
-    pill.className='runpill bad';
-    text.textContent='Ingen kontakt';
+    schedCache.online=false;
     hb.textContent='Server heartbeat: ingen kontakt til appen';
   }
+  tick();
+}
+
+// Tikker hvert sekund: viser tydeligt at programmet lever (nedtælling, sweep, spinner).
+function tick(){
+  const pill=document.getElementById('runPill'), text=document.getElementById('runText');
+  const bar=document.getElementById('actBar'), cd=document.getElementById('schedCountdown');
+  if(!pill) return;
+  // 1) ingen kontakt til serveren
+  if(!schedCache.online){
+    pill.className='runpill bad'; text.textContent='Ingen kontakt';
+    bar.classList.remove('on'); cd.className='countdown idle';
+    cd.textContent='Ingen kontakt til serveren — er den startet?';
+    return;
+  }
+  // 2) en cyklus kører lige nu (manuelt eller auto)
+  if(busy>0){
+    pill.className='runpill ok'; text.innerHTML='<span class="spinner"></span> Arbejder';
+    bar.classList.add('on'); cd.className='countdown';
+    cd.innerHTML='<span class="spinner"></span> Scanner markedet nu…';
+    return;
+  }
+  // 3) autonom drift kører — vis levende nedtælling til næste scan
+  if(schedCache.running){
+    pill.className='runpill ok';
+    const now=Date.now()/1000;
+    let secs=schedCache.next_run?Math.round(schedCache.next_run-now):null;
+    bar.classList.add('on'); cd.className='countdown';
+    if(secs===null||secs<=0){
+      text.innerHTML='<span class="dots">Scanner</span>';
+      cd.innerHTML='<span class="spinner"></span> Scanner markedet…';
+    } else {
+      text.textContent='Kører · næste om '+secs+'s';
+      cd.textContent='⏳ Næste scan om '+secs+' sekunder';
+    }
+    return;
+  }
+  // 4) server aktiv, men ikke autonom
+  pill.className='runpill warn'; text.textContent='Klar (ikke autonom)';
+  bar.classList.remove('on'); cd.className='countdown idle';
+  cd.textContent='Tryk "Start autonom" for at lade den køre selv.';
 }
 async function refreshSched(){
   const s=await (await fetch('/api/scheduler/status')).json();
+  schedCache.running=s.running; schedCache.interval=s.interval;
+  schedCache.next_run=s.next_run; schedCache.last_run=s.last_run;
+  tick();
   const el=document.getElementById('schedState');
   el.textContent=s.running?'KØRER':'stoppet'; el.style.color=s.running?'var(--green)':'var(--muted)';
   document.getElementById('schedTiming').textContent = s.running
@@ -719,6 +789,8 @@ refreshHealth();
 loadSettings();
 setInterval(refreshSched, 10000);
 setInterval(refreshHealth, 5000);
+setInterval(tick, 1000);   // levende nedtælling/animation hvert sekund
+tick();
 </script>
 </body>
 </html>
