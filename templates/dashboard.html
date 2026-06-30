@@ -7,104 +7,130 @@
 <style>
   :root {
     color-scheme: dark;
-    --bg:#0b0f14; --panel:#11161d; --panel2:#161b22; --border:#222b36;
-    --text:#e6edf3; --muted:#8b949e; --blue:#2f81f7; --green:#3fb950; --red:#f85149; --amber:#d8b34a;
+    --bg:#0a0e14; --panel:#12181f; --panel2:#171e27; --border:#232c38;
+    --text:#eaf0f7; --muted:#909bab; --blue:#3b8eef; --green:#46c97e; --red:#f0655e; --amber:#e0b24a;
+    --radius:16px;
   }
   * { box-sizing: border-box; }
   body { margin:0; font-family: system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-         background: var(--bg); color: var(--text); font-size:14px; }
+         background:
+           radial-gradient(900px 500px at 100% -5%, #14202e 0%, rgba(20,32,46,0) 55%),
+           var(--bg);
+         color: var(--text); font-size:14.5px; line-height:1.5; }
 
-  header { position:sticky; top:0; z-index:10; display:flex; align-items:center; gap:18px;
-           padding:14px 22px; background:#0d1117ee; backdrop-filter:blur(8px);
+  header { position:sticky; top:0; z-index:10; display:flex; align-items:center; gap:16px;
+           padding:12px 22px; background:#0b1118e6; backdrop-filter:blur(10px);
            border-bottom:1px solid var(--border); flex-wrap:wrap; }
-  .brand { font-weight:800; font-size:17px; }
-  .hsum { margin-left:auto; display:flex; gap:18px; align-items:center; flex-wrap:wrap; }
+  .brand-wrap { display:flex; align-items:center; gap:11px; }
+  .logo-img { width:38px; height:38px; border-radius:10px; background:#fff; padding:3px; object-fit:contain;
+              box-shadow:0 2px 10px rgba(0,0,0,.3); }
+  .brand { font-weight:800; font-size:16px; letter-spacing:.2px; line-height:1.1; }
+  .brand small { display:block; font-weight:500; font-size:11px; color:var(--muted); letter-spacing:.3px; }
+  .hsum { margin-left:auto; display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
   .hstat { text-align:right; }
   .hstat .l { font-size:11px; color:var(--muted); }
   .hstat .v { font-size:16px; font-weight:700; }
-  .badge { padding:4px 11px; border-radius:999px; font-size:12px; font-weight:700; }
-  .badge.sim { background:#1f2937; color:var(--green); }
-  .badge.live { background:#3a1416; color:var(--red); }
+  .badge { padding:5px 12px; border-radius:999px; font-size:11.5px; font-weight:700; letter-spacing:.3px; }
+  .badge.sim { background:#16271d; color:var(--green); }
+  .badge.live { background:#311517; color:var(--red); }
   .runpill { display:inline-flex; align-items:center; gap:7px; border:1px solid var(--border);
-             background:var(--panel2); color:var(--muted); padding:5px 10px; border-radius:999px;
+             background:var(--panel2); color:var(--muted); padding:5px 11px; border-radius:999px;
              font-size:12px; font-weight:700; }
   .dot { width:8px; height:8px; border-radius:999px; background:var(--muted); display:inline-block; }
   .runpill.ok { color:var(--green); border-color:#24553a; }
-  .runpill.ok .dot { background:var(--green); box-shadow:0 0 0 0 rgba(63,185,80,.7); animation:pulse 1.4s infinite; }
+  .runpill.ok .dot { background:var(--green); box-shadow:0 0 0 0 rgba(70,201,126,.7); animation:pulse 1.4s infinite; }
   .runpill.warn { color:var(--amber); border-color:#5a4a1f; }
   .runpill.warn .dot { background:var(--amber); }
   .runpill.bad { color:var(--red); border-color:#5a1f1f; }
   .runpill.bad .dot { background:var(--red); }
-  @keyframes pulse { 0% { box-shadow:0 0 0 0 rgba(63,185,80,.65); }
-                     70% { box-shadow:0 0 0 8px rgba(63,185,80,0); }
-                     100% { box-shadow:0 0 0 0 rgba(63,185,80,0); } }
+  @keyframes pulse { 0% { box-shadow:0 0 0 0 rgba(70,201,126,.6); }
+                     70% { box-shadow:0 0 0 8px rgba(70,201,126,0); }
+                     100% { box-shadow:0 0 0 0 rgba(70,201,126,0); } }
   .logout { color:var(--muted); text-decoration:none; font-size:13px; border:1px solid var(--border);
-            padding:6px 12px; border-radius:8px; }
-  .logout:hover { color:var(--text); }
+            padding:7px 13px; border-radius:9px; }
+  .logout:hover { color:var(--text); border-color:#3a4250; }
 
-  nav.tabs { display:flex; gap:4px; padding:10px 22px 0; border-bottom:1px solid var(--border);
-             background:var(--bg); position:sticky; top:57px; z-index:9; overflow-x:auto; }
-  .tab { padding:10px 16px; border:0; background:none; color:var(--muted); font-size:14px;
-         font-weight:600; cursor:pointer; border-bottom:2px solid transparent; white-space:nowrap; }
-  .tab.active { color:var(--text); border-bottom-color:var(--blue); }
+  nav.tabs { display:flex; gap:6px; padding:10px 22px; border-bottom:1px solid var(--border);
+             background:#0b1118cc; backdrop-filter:blur(10px);
+             position:sticky; top:63px; z-index:9; overflow-x:auto; }
+  .tab { padding:9px 15px; border:0; background:none; color:var(--muted); font-size:14px;
+         font-weight:600; cursor:pointer; border-radius:9px; white-space:nowrap; transition:.12s; }
+  .tab:hover { color:var(--text); background:var(--panel2); }
+  .tab.active { color:#fff; background:var(--blue); }
 
-  main { max-width:1000px; margin:0 auto; padding:24px 22px 60px; }
+  main { max-width:920px; margin:0 auto; padding:26px 22px 70px; }
   .page { display:none; }
-  .page.active { display:block; }
+  .page.active { display:block; animation:fade .25s ease; }
+  @keyframes fade { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:none; } }
 
-  .card { background:var(--panel); border:1px solid var(--border); border-radius:14px;
-          padding:20px; margin-bottom:18px; }
-  .card h2 { margin:0 0 4px; font-size:16px; }
-  .card .desc { color:var(--muted); font-size:13px; margin:0 0 16px; line-height:1.5; }
+  .card { background:var(--panel); border:1px solid var(--border); border-radius:var(--radius);
+          padding:22px; margin-bottom:16px; box-shadow:0 1px 2px rgba(0,0,0,.2); }
+  .card h2 { margin:0 0 5px; font-size:16px; }
+  .card .desc { color:var(--muted); font-size:13px; margin:0 0 16px; line-height:1.55; }
 
-  .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; }
-  .stat { background:var(--panel2); border:1px solid var(--border); border-radius:11px; padding:14px; }
+  .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; }
+  .stat { background:var(--panel2); border:1px solid var(--border); border-radius:12px; padding:15px; }
   .stat .l { font-size:12px; color:var(--muted); }
-  .stat .v { font-size:24px; font-weight:700; margin-top:3px; }
+  .stat .v { font-size:23px; font-weight:700; margin-top:4px; }
   .up { color:var(--green); } .down { color:var(--red); }
 
   .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
   .row + .row { margin-top:12px; }
-  button.btn { background:var(--blue); color:#fff; border:0; padding:10px 16px; border-radius:9px;
-               font-size:14px; font-weight:600; cursor:pointer; }
-  button.btn:hover { background:#4090ff; }
+  button.btn { background:var(--blue); color:#fff; border:0; padding:11px 18px; border-radius:10px;
+               font-size:14px; font-weight:600; cursor:pointer; transition:.12s; }
+  button.btn:hover { filter:brightness(1.1); }
   button.btn.ghost { background:var(--panel2); border:1px solid var(--border); color:var(--text); }
-  button.btn.ghost:hover { border-color:#3a4250; }
+  button.btn.ghost:hover { border-color:#3a4250; filter:none; }
   button.btn.danger { background:#5a1f1f; }
   button.btn:disabled { opacity:.5; cursor:default; }
   input,select { background:var(--bg); border:1px solid var(--border); color:var(--text);
-                 padding:9px 11px; border-radius:8px; font-size:14px; }
-  input[type=number]{ width:110px; }
-  label.chk { display:inline-flex; align-items:center; gap:7px; background:var(--panel2);
-              border:1px solid var(--border); padding:8px 13px; border-radius:8px; cursor:pointer; }
+                 padding:10px 12px; border-radius:9px; font-size:14px; }
+  input:focus,select:focus { outline:none; border-color:var(--blue); }
+  input[type=number]{ width:120px; }
+  label.chk { display:inline-flex; align-items:center; gap:8px; background:var(--panel2);
+              border:1px solid var(--border); padding:9px 14px; border-radius:9px; cursor:pointer; }
   .formgrid { display:grid; grid-template-columns:180px minmax(0,1fr); gap:12px; align-items:center; }
   .formgrid input,.formgrid select { width:100%; }
   .key-status { font-size:12px; color:var(--muted); margin-top:4px; }
 
-  table { width:100%; border-collapse:collapse; font-size:13px; margin-top:6px; }
-  th,td { text-align:left; padding:9px 10px; border-bottom:1px solid var(--border); }
+  /* sammenklappelige "avanceret"-sektioner — holder standardvisningen rolig */
+  details.adv { border:1px solid var(--border); border-radius:12px; background:var(--panel2);
+                margin-top:8px; overflow:hidden; }
+  details.adv > summary { cursor:pointer; padding:13px 16px; font-weight:600; font-size:13.5px;
+                          color:var(--text); list-style:none; display:flex; align-items:center; gap:8px; }
+  details.adv > summary::-webkit-details-marker { display:none; }
+  details.adv > summary::before { content:"▸"; color:var(--muted); transition:.15s; }
+  details.adv[open] > summary::before { transform:rotate(90deg); }
+  details.adv > summary:hover { color:var(--blue); }
+  .adv-body { padding:0 16px 16px; }
+
+  table { width:100%; border-collapse:collapse; font-size:13px; margin-top:8px; }
+  th,td { text-align:left; padding:10px 10px; border-bottom:1px solid var(--border); }
   th { color:var(--muted); font-weight:500; }
   .muted { color:var(--muted); }
-  .log { font-family:ui-monospace,Menlo,monospace; font-size:12px; background:#0a0e13;
-         border:1px solid var(--border); border-radius:9px; padding:12px; white-space:pre-wrap;
+  .log { font-family:ui-monospace,Menlo,monospace; font-size:12px; background:#080c11;
+         border:1px solid var(--border); border-radius:10px; padding:13px; white-space:pre-wrap;
          max-height:180px; overflow:auto; color:#9fb1c1; margin-top:12px; }
-  canvas { width:100%; height:240px; background:#0a0e13; border:1px solid var(--border); border-radius:9px; }
+  canvas { width:100%; height:240px; background:#080c11; border:1px solid var(--border); border-radius:10px; }
 
-  .note { border-radius:11px; padding:13px 16px; font-size:13px; line-height:1.55; }
+  .note { border-radius:12px; padding:13px 16px; font-size:13px; line-height:1.55; }
   .note.info { background:#0d1f2d; border:1px solid #1f4a6b; color:#9fc8e8; }
-  .note.warn { background:#221608; border:1px solid #5a3a1f; color:var(--amber); }
+  .note.warn { background:#231808; border:1px solid #5a3a1f; color:var(--amber); }
   .note.ok   { background:#0d2417; border:1px solid #1f5a3a; color:#7fd6a0; }
-  .addr { font-family:ui-monospace,monospace; font-size:13px; background:#0a0e13; border:1px solid var(--border);
-          border-radius:8px; padding:11px; word-break:break-all; margin-top:8px; }
-  code { background:#0a0e13; padding:2px 6px; border-radius:5px; font-size:12px; }
-  .step { display:flex; gap:10px; margin-top:10px; }
-  .step .n { flex:0 0 24px; height:24px; border-radius:50%; background:var(--panel2); border:1px solid var(--border);
+  .addr { font-family:ui-monospace,monospace; font-size:13px; background:#080c11; border:1px solid var(--border);
+          border-radius:9px; padding:11px; word-break:break-all; margin-top:8px; }
+  code { background:#080c11; padding:2px 6px; border-radius:5px; font-size:12px; }
+  .step { display:flex; gap:11px; margin-top:11px; align-items:flex-start; }
+  .step .n { flex:0 0 25px; height:25px; border-radius:50%; background:var(--blue); color:#fff;
              display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; }
 </style>
 </head>
 <body>
 <header>
-  <div class="brand">Den Danske Metode</div>
+  <div class="brand-wrap">
+    <img class="logo-img" src="/static/logo.png" alt="DDM logo">
+    <div class="brand">Den Danske Metode<small>AI-handel & anbefalinger</small></div>
+  </div>
   <div class="hsum">
     <span class="badge sim" id="hBadge">TØR-KØRSEL</span>
     <span class="runpill warn" id="runPill"><span class="dot"></span><span id="runText">Forbinder...</span></span>
@@ -139,53 +165,57 @@
     </div>
 
     <div class="card">
-      <h2>Preflight før nattekørsel</h2>
-      <p class="desc">Tjekker opsætningen uden at sende ordrer. Live kræver både <code>DDM_LIVE=1</code>,
-        API-nøgler og <code>DDM_LIVE_ARMED=JEG_FORSTAAR_RISIKOEN</code>.</p>
-      <div class="row">
-        <button class="btn ghost" onclick="runPreflight()">Kør preflight</button>
-        <button class="btn ghost" onclick="runReadiness()">Klar til d.1?</button>
-        <button class="btn ghost" onclick="clearHalt()">Ophæv risikobremse</button>
-      </div>
-      <div class="log" id="preflightLog">Kør preflight før du starter autonom handel med rigtige penge.</div>
-    </div>
-
-    <div class="card">
       <h2>Autonom drift</h2>
-      <p class="desc">Lad serveren køre cyklusser helt af sig selv — også når browseren er lukket.
-        Tilstanden overlever en genstart. Det er den ægte "sæt op og glem".</p>
+      <p class="desc">Lad den køre helt af sig selv — også når browseren er lukket. Overlever genstart.
+        Det er den ægte "sæt op og glem".</p>
       <div class="note info" style="margin-bottom:14px">Status: <b id="schedState">indlæser…</b>
         <span class="muted" id="schedTiming"></span><br>
         <span class="muted" id="heartbeatText">Server heartbeat: venter...</span></div>
       <div class="row">
-        <label>Interval <input type="number" id="schedInterval" value="60" min="15" step="15"> sek</label>
-        <label class="chk"><input type="checkbox" id="schedLive" checked> Auto-trader</label>
-        <label class="chk"><input type="checkbox" id="schedSim"> Simulator</label>
         <button class="btn" onclick="schedStart()">Start autonom</button>
         <button class="btn ghost" onclick="schedStop()">Stop</button>
+        <label>hvert <input type="number" id="schedInterval" value="60" min="15" step="15"> sek</label>
+        <label class="chk"><input type="checkbox" id="schedLive" checked> Auto-trader</label>
+        <label class="chk"><input type="checkbox" id="schedSim"> Simulator</label>
       </div>
       <div class="log" id="schedLog">—</div>
     </div>
 
-    <div class="card">
-      <h2>Manuel styring & sikkerhed</h2>
-      <div class="note warn" style="margin-bottom:14px"><b>Sikkerhed:</b> opret din API-nøgle med
-        <b>KUN handels-rettigheder, aldrig udbetaling</b> — så kan ingen trække penge ud af din konto.
-        Kører i tør-kørsel indtil du sætter <code>DDM_LIVE=1</code> + nøgler.</div>
-      <div class="row">
-        <button class="btn" onclick="liveCycle()">Kør én cyklus</button>
-        <button class="btn ghost" id="liveAutoBtn" onclick="toggleLiveAuto()">Auto (30s)</button>
-        <button class="btn danger" onclick="liveFlatten()">Kill switch (sælg alt)</button>
+    <details class="adv">
+      <summary>Tjek før rigtige penge (preflight & klar-tjek)</summary>
+      <div class="adv-body">
+        <p class="desc">Tjekker opsætningen uden at sende ordrer. Live kræver <code>DDM_LIVE=1</code>,
+          API-nøgler og <code>DDM_LIVE_ARMED=JEG_FORSTAAR_RISIKOEN</code>.</p>
+        <div class="row">
+          <button class="btn ghost" onclick="runPreflight()">Kør preflight</button>
+          <button class="btn ghost" onclick="runReadiness()">Klar til d.1?</button>
+          <button class="btn ghost" onclick="clearHalt()">Ophæv risikobremse</button>
+        </div>
+        <div class="log" id="preflightLog">Kør preflight før du starter autonom handel med rigtige penge.</div>
       </div>
-      <div class="row">
-        <label>Nulstil demo-pulje til <input type="number" id="liveStart" placeholder="valgfrit" min="0" step="50"> <span id="liveQuote">EUR</span></label>
-        <button class="btn ghost" onclick="liveReset()">Nulstil</button>
+    </details>
+
+    <details class="adv">
+      <summary>Manuel styring, positioner & kill switch</summary>
+      <div class="adv-body">
+        <div class="note warn" style="margin-bottom:14px"><b>Sikkerhed:</b> opret din API-nøgle med
+          <b>KUN handels-rettigheder, aldrig udbetaling</b> — så kan ingen trække penge ud af din konto.
+          Kører i tør-kørsel indtil du sætter <code>DDM_LIVE=1</code> + nøgler.</div>
+        <div class="row">
+          <button class="btn" onclick="liveCycle()">Kør én cyklus</button>
+          <button class="btn ghost" id="liveAutoBtn" onclick="toggleLiveAuto()">Auto (30s)</button>
+          <button class="btn danger" onclick="liveFlatten()">Kill switch (sælg alt)</button>
+        </div>
+        <div class="row">
+          <label>Nulstil demo-pulje til <input type="number" id="liveStart" placeholder="valgfrit" min="0" step="50"> <span id="liveQuote">EUR</span></label>
+          <button class="btn ghost" onclick="liveReset()">Nulstil</button>
+        </div>
+        <table><thead><tr><th>Par</th><th>Mængde</th><th>Købspris</th><th>Top</th><th>Pris nu</th><th>Kostpris</th></tr></thead>
+          <tbody id="livePositions"><tr><td class="muted" colspan="6">Ingen åbne positioner</td></tr></tbody>
+        </table>
+        <div class="log" id="liveLog">Tryk "Kør én cyklus" for at lade motoren handle.</div>
       </div>
-      <table><thead><tr><th>Par</th><th>Mængde</th><th>Købspris</th><th>Top</th><th>Pris nu</th><th>Kostpris</th></tr></thead>
-        <tbody id="livePositions"><tr><td class="muted" colspan="6">Ingen åbne positioner</td></tr></tbody>
-      </table>
-      <div class="log" id="liveLog">Tryk "Kør én cyklus" for at lade motoren handle.</div>
-    </div>
+    </details>
   </section>
 
   <!-- ============ INDBETAL ============ -->
@@ -329,22 +359,6 @@
         <label class="chk"><input type="checkbox" id="setAiResearchEnabled"> Tillad betalte Claude-kald</label>
         <label>Web-søgning</label>
         <label class="chk"><input type="checkbox" id="setAiWebSearchEnabled"> Tillad web-søgning (dyrere)</label>
-        <label>Max AI-kald/dag</label>
-        <input id="setAiDailyCallLimit" type="number" min="0" step="1" value="3">
-        <label>Tokenbudget/dag</label>
-        <input id="setAiDailyTokenBudget" type="number" min="0" step="500" value="12000">
-        <label>Max output/kald</label>
-        <input id="setAiMaxTokens" type="number" min="100" step="100" value="800">
-        <label>Max live-handel</label>
-        <input id="setMaxLiveStake" type="number" min="0" step="5" value="25">
-        <label>Max køb/dag</label>
-        <input id="setMaxDailyBuys" type="number" min="0" step="1" value="2">
-        <label>Max åbne positioner</label>
-        <input id="setMaxOpenPositions" type="number" min="0" step="1" value="2">
-        <label>Canary mode</label>
-        <label class="chk"><input type="checkbox" id="setCanaryMode"> Første live-køb er ekstra lille</label>
-        <label>Canary beløb</label>
-        <input id="setCanaryStake" type="number" min="0" step="5" value="10">
         <label>OpenAI</label>
         <div>
           <input id="setOpenai" type="password" placeholder="OPENAI_API_KEY">
@@ -361,6 +375,31 @@
           <div class="key-status" id="statusOdds">–</div>
         </div>
       </div>
+
+      <details class="adv" style="margin-top:14px">
+        <summary>Budget & risikogrænser (avanceret)</summary>
+        <div class="adv-body">
+          <p class="desc" style="margin-top:10px">Standardværdierne er sikre — rør dem kun hvis du ved hvad du laver.</p>
+          <div class="formgrid">
+            <label>Max AI-kald/dag</label>
+            <input id="setAiDailyCallLimit" type="number" min="0" step="1" value="3">
+            <label>Tokenbudget/dag</label>
+            <input id="setAiDailyTokenBudget" type="number" min="0" step="500" value="12000">
+            <label>Max output/kald</label>
+            <input id="setAiMaxTokens" type="number" min="100" step="100" value="800">
+            <label>Max live-handel</label>
+            <input id="setMaxLiveStake" type="number" min="0" step="5" value="25">
+            <label>Max køb/dag</label>
+            <input id="setMaxDailyBuys" type="number" min="0" step="1" value="2">
+            <label>Max åbne positioner</label>
+            <input id="setMaxOpenPositions" type="number" min="0" step="1" value="2">
+            <label>Canary mode</label>
+            <label class="chk"><input type="checkbox" id="setCanaryMode"> Første live-køb er ekstra lille</label>
+            <label>Canary beløb</label>
+            <input id="setCanaryStake" type="number" min="0" step="5" value="10">
+          </div>
+        </div>
+      </details>
       <div class="row" style="margin-top:16px">
         <button class="btn" onclick="saveSettings()">Gem settings</button>
         <button class="btn ghost" onclick="loadSettings()">Genindlæs status</button>
