@@ -222,7 +222,7 @@
           <b>KUN handels-rettigheder, aldrig udbetaling</b> — så kan ingen trække penge ud af din konto.
           Kører i tør-kørsel indtil du sætter <code>DDM_LIVE=1</code> + nøgler.</div>
         <div class="row">
-          <button class="btn" onclick="liveCycle()">Kør én cyklus</button>
+          <button class="btn" id="liveCycleBtn" onclick="liveCycle()">Kør én cyklus</button>
           <button class="btn ghost" id="liveAutoBtn" onclick="toggleLiveAuto()">Auto (30s)</button>
           <button class="btn danger" onclick="liveFlatten()">Kill switch (sælg alt)</button>
         </div>
@@ -288,7 +288,7 @@
         <div class="stat"><div class="l">Naiv gambling</div><div class="v" id="sNaive">–</div></div>
       </div>
       <div class="row" style="margin-top:16px">
-        <button class="btn" onclick="cycle()">Kør cyklus</button>
+        <button class="btn" id="simCycleBtn" onclick="cycle()">Kør cyklus</button>
         <button class="btn ghost" id="simAutoBtn" onclick="toggleAuto()">Auto (10s)</button>
         <button class="btn ghost" onclick="scanSignals()">Scan signaler</button>
         <button class="btn ghost" onclick="runBacktest()">Backtest (200 dage)</button>
@@ -298,6 +298,7 @@
         <label>Startbeløb <input type="number" id="simStart" placeholder="vælg selv" min="0" step="50"> kr</label>
         <button class="btn ghost" onclick="resetGame()">Nulstil simulator</button>
       </div>
+      <div class="countdown idle" id="simActivity">Tryk "Kør cyklus" eller start Auto for at se den arbejde.</div>
       <p class="muted" id="aiStatus" style="font-size:12px"></p>
     </div>
 
@@ -436,7 +437,8 @@ const fmtTime = ts => ts ? new Date(ts*1000).toLocaleTimeString('da-DK') : '–'
 let currentSimStarting = 100;
 let currentLiveEquity = 0;
 // fælles "kører"-tilstand til animationerne
-let schedCache = { running:false, online:true, interval:60, next_run:null, last_run:null };
+let schedCache = { running:false, online:true, interval:60, next_run:null, last_run:null,
+                   run_sim:false, run_live:true };
 let busy = 0;
 function setBusy(d){ busy = Math.max(0, busy + d); tick(); }
 const fmtDuration = seconds => {
@@ -704,8 +706,27 @@ async function refreshHealth(){
   tick();
 }
 
+// Deaktiver "Kør cyklus" mens noget kører, og vis aktivitet på simulator-fanen.
+function updateControls(){
+  const simBusy  = busy>0 || simAuto!==null  || (schedCache.running && schedCache.run_sim);
+  const liveBusy = busy>0 || liveAuto!==null || (schedCache.running && schedCache.run_live);
+  const sb=document.getElementById('simCycleBtn');  if(sb) sb.disabled = simBusy;
+  const lb=document.getElementById('liveCycleBtn'); if(lb) lb.disabled = liveBusy;
+  const sa=document.getElementById('simActivity');
+  if(sa){
+    const secs=schedCache.next_run?Math.max(0,Math.round(schedCache.next_run-Date.now()/1000)):null;
+    if(busy>0){ sa.className='countdown'; sa.innerHTML='<span class="spinner"></span> Kører cyklus nu…'; }
+    else if(simAuto!==null){ sa.className='countdown'; sa.innerHTML='<span class="dots">Auto kører · scanner hvert 10. sekund</span>'; }
+    else if(schedCache.running && schedCache.run_sim){
+      sa.className='countdown';
+      sa.textContent = (secs===null||secs<=0) ? '⚙️ Scanner markedet…' : ('⏳ Næste scan om '+secs+'s');
+    } else { sa.className='countdown idle'; sa.textContent='Tryk "Kør cyklus" eller start Auto for at se den arbejde.'; }
+  }
+}
+
 // Tikker hvert sekund: viser tydeligt at programmet lever (nedtælling, sweep, spinner).
 function tick(){
+  updateControls();
   const pill=document.getElementById('runPill'), text=document.getElementById('runText');
   const bar=document.getElementById('actBar'), cd=document.getElementById('schedCountdown');
   if(!pill) return;
@@ -747,6 +768,7 @@ async function refreshSched(){
   const s=await (await fetch('/api/scheduler/status')).json();
   schedCache.running=s.running; schedCache.interval=s.interval;
   schedCache.next_run=s.next_run; schedCache.last_run=s.last_run;
+  schedCache.run_sim=s.run_sim; schedCache.run_live=s.run_live;
   tick();
   const el=document.getElementById('schedState');
   el.textContent=s.running?'KØRER':'stoppet'; el.style.color=s.running?'var(--green)':'var(--muted)';
