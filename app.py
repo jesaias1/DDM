@@ -15,7 +15,8 @@ from flask import (Flask, jsonify, request, render_template, session,
                    redirect, url_for)
 
 from engine import (bankroll, backtest, research, markets, sports, allocator,
-                    autotrader, scheduler, auth, exchange, settings)
+                    autotrader, scheduler, auth, exchange, settings, notify,
+                    polymarket)
 
 app = Flask(__name__)
 app.secret_key = auth.secret_key()
@@ -137,8 +138,12 @@ def api_signals():
     balance = float(data.get("balance", 0))
     state = bankroll.load_state() or bankroll.reset()
     api_key = os.environ.get("ODDS_API_KEY")
+    use_ai = state.get("use_ai", False)
+    cfg = settings.load()
     opps = markets.find_opportunities()
-    opps += sports.find_opportunities(api_key, use_ai=state.get("use_ai", False))
+    opps += sports.find_opportunities(api_key, use_ai=use_ai)
+    if cfg.get("polymarket_enabled", settings.PUBLIC_DEFAULTS["polymarket_enabled"]):
+        opps += polymarket.find_opportunities(use_ai=use_ai)
     actions = allocator.allocate(balance, opps)
     return jsonify({
         "balance": balance,
@@ -217,6 +222,12 @@ def api_deposit():
     res["live"] = True
     res["exchange"] = exchange.EXCHANGE_ID
     return jsonify(res)
+
+
+@app.route("/api/notify/test", methods=["POST"])
+def api_notify_test():
+    """Send en testbesked til mobilen (Telegram)."""
+    return jsonify(notify.test_message())
 
 
 # ---------- scheduler ----------

@@ -19,7 +19,7 @@ Kill switch: flatten() sælger/lukker alt og stopper.
 import os
 import time
 
-from . import exchange, allocator, store, strategy, settings
+from . import exchange, allocator, notify, store, strategy, settings
 
 STATE_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "live_state.json")
 PAPER_START_EUR = float(os.environ.get("DDM_PAPER_START", os.environ.get("SMARTSTAKE_PAPER_START", 0.0)))
@@ -255,9 +255,21 @@ def _manage(state: dict, live: bool) -> list[str]:
     return log
 
 
+def _alert_if_action(log: list[str], live: bool) -> None:
+    """Send mobil-besked ved køb/salg/risikobremse. Må aldrig stoppe handel."""
+    try:
+        interesting = [l for l in log if l.startswith(("Købte", "Solgte", "Lukkede", "Risikobremse"))]
+        if interesting:
+            notify.trade_alert(interesting, live)
+    except Exception as e:
+        print(f"[autotrader] besked fejlede: {e}")
+
+
 def run_cycle() -> dict:
     with store.lock_for(STATE_PATH):
-        return _run_cycle_locked()
+        result = _run_cycle_locked()
+    _alert_if_action(result.get("log", []), result.get("live", False))
+    return result
 
 
 def _run_cycle_locked() -> dict:

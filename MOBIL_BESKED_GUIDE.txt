@@ -1,0 +1,60 @@
+========================================================
+  DEN DANSKE METODE - BESKEDER TIL DIN MOBIL (Telegram)
+========================================================
+
+Hvorfor Telegram og ikke WhatsApp? WhatsApp kraever en godkendt
+Meta Business API-konto (tungt og delvist betalt). Telegram er
+gratis, privat, og sat op paa 5 minutter. Botten sender:
+
+  - Daglig status (pulje, positioner, dagens handler) kl. 19
+    (tidspunkt kan aendres i Settings).
+  - Straks-besked ved koeb, salg og risikobremse.
+
+Bemaerk: den daglige status sendes af den autonome drift - saa
+"Start autonom" skal vaere taendt for at faa den.
+
+
+--------------------------------------------------------
+OPSAETNING (5 minutter, alt paa din telefon)
+--------------------------------------------------------
+
+1) Installer Telegram-appen og opret en konto (hvis du ikke har).
+
+2) Opret din bot:
+   - Soeg efter "BotFather" i Telegram (blaa flueben, officiel).
+   - Skriv:  /newbot
+   - Giv den et navn (fx "DDM Status") og et brugernavn der
+     slutter paa "bot" (fx "jesaias_ddm_bot").
+   - BotFather svarer med en TOKEN der ligner:
+       1234567890:AAHjk3h5k3j5h3k5j3h5kj3h5kj3h5kj3h
+     Kopier den.
+
+3) Aktivér din bot:
+   - Aabn din nye bot i Telegram og tryk START (eller skriv /start).
+     (VIGTIGT - ellers maa botten ikke skrive til dig.)
+
+4) Find dit chat-id:
+   - Soeg efter "userinfobot" i Telegram og tryk START.
+   - Den svarer med dit id, fx: 123456789. Kopier tallet.
+
+5) Ind i appen:
+   - Log ind -> fanen Settings.
+   - "Telegram bot-token" = tokenen fra trin 2.
+   - "Telegram chat-id"   = tallet fra trin 4.
+   - Kryds "Send beskeder til min mobil" af.
+   - Tryk "Gem settings".
+   - Tryk "Send testbesked til mobilen" -> din telefon skal bippe!
+
+
+--------------------------------------------------------
+FEJLSOEGNING
+--------------------------------------------------------
+- Ingen besked? Tjek at du trykkede START paa din bot (trin 3).
+- Stadig intet? Tjek token og chat-id for slaafejl.
+- Beskeden maa aldrig stoppe botten: fejler Telegram, handler
+  motoren bare videre og logger fejlen.
+
+Sikkerhed: tokenen gemmes kun lokalt paa din maskine i
+data/settings.json (git-ignoreret). Den kan kun bruges til at
+sende beskeder fra DIN bot - ikke til at roere dine penge.
+========================================================

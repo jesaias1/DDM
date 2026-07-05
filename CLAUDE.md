@@ -40,6 +40,10 @@ det virker (mekanisk), ikke for AT det tjener penge. Brugeren ved chancen er lav
 - `sports.py` — odds (the-odds-api), value-detektion. Sport via `DDM_SPORT`.
 - `research.py` — valgfri Claude-web-research til sport (token-budget i Settings).
 - `markets.py` — CoinGecko-signaler til simulatoren (paper).
+- `notify.py` — mobil-beskeder via Telegram: daglig status (via scheduler) +
+  straks-besked ved køb/salg/risikobremse. Fejler ALTID stille (stopper aldrig handel).
+- `polymarket.py` — Polymarket-scanner, KUN LÆSNING (ingen wallet/penge — bevidst;
+  ingen dansk licens + ingen trade-only-nøgler dér). Value-model som sport.
 - `backtest.py` — syntetisk backtest med samme strategi (ærlig risikoprofil).
 - `settings.py`, `auth.py` — runtime-indstillinger og login (hashet kode).
 
@@ -66,8 +70,10 @@ DDM_SPORT (fx soccer_fifa_world_cup), ANTHROPIC_API_KEY, ODDS_API_KEY.
 
 MVP committet og virker (tests grønne, dry-run + login + endpoints verificeret).
 Brugeren planlægger at indbetale ~200 kr på Coinbase d. 1. i måneden og køre det
-LIVE på sin stationære PC (autonomt). Brugervendte guides i mappen:
-`KOM_GODT_IGANG_D1.txt`, `HUSKELISTE.txt`, `SPORTS_ANBEFALINGER_GUIDE.txt`.
+LIVE på sin stationære PC (autonomt). Har Coinbase-app på telefonen. Telegram-
+beskeder og Polymarket-scanner (read-only) er bygget ind. Brugervendte guides:
+`KOM_GODT_IGANG_D1.txt`, `HUSKELISTE.txt`, `SPORTS_ANBEFALINGER_GUIDE.txt`,
+`MOBIL_BESKED_GUIDE.txt`.
 
 ## Konventioner
 

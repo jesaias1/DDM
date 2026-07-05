@@ -41,6 +41,13 @@ KEYS = {
         "active": True,
         "package": None,
     },
+    "telegram_bot_token": {
+        "env": "DDM_TELEGRAM_TOKEN",
+        "label": "Telegram bot",
+        "used_for": "Daglig status + handels-beskeder til mobilen",
+        "active": True,
+        "package": None,
+    },
 }
 
 PUBLIC_DEFAULTS = {
@@ -56,6 +63,11 @@ PUBLIC_DEFAULTS = {
     "max_open_positions": 2,
     "canary_mode": True,
     "canary_stake": 10.0,
+    "telegram_chat_id": "",
+    "notify_enabled": False,
+    "notify_trades": True,
+    "notify_daily_hour": 19,
+    "polymarket_enabled": True,
 }
 
 
@@ -152,6 +164,11 @@ def status() -> dict:
         "max_open_positions": int(current.get("max_open_positions", PUBLIC_DEFAULTS["max_open_positions"])),
         "canary_mode": bool(current.get("canary_mode", PUBLIC_DEFAULTS["canary_mode"])),
         "canary_stake": float(current.get("canary_stake", PUBLIC_DEFAULTS["canary_stake"])),
+        "telegram_chat_id": str(current.get("telegram_chat_id", PUBLIC_DEFAULTS["telegram_chat_id"])),
+        "notify_enabled": bool(current.get("notify_enabled", PUBLIC_DEFAULTS["notify_enabled"])),
+        "notify_trades": bool(current.get("notify_trades", PUBLIC_DEFAULTS["notify_trades"])),
+        "notify_daily_hour": int(current.get("notify_daily_hour", PUBLIC_DEFAULTS["notify_daily_hour"])),
+        "polymarket_enabled": bool(current.get("polymarket_enabled", PUBLIC_DEFAULTS["polymarket_enabled"])),
         "settings_path": SETTINGS_PATH,
         "note": "Krypto-botten bruger ingen AI-tokens. OpenAI og Gemini gemmes kun til fremtidige udvidelser; den nuværende AI-research bruger kun Claude/Anthropic og kun når AI-research er slået til.",
     }

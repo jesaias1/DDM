@@ -25,9 +25,9 @@ def allocate(bankroll: float, opportunities: list[dict]) -> list[dict]:
     """
     scored = []
     for opp in opportunities:
-        if opp["type"] == "sport":
-            frac = opp.get("kelly_fraction", 0.0)
-        else:  # market
+        if "kelly_fraction" in opp:            # sport/polymarket: binær Kelly er allerede regnet
+            frac = opp["kelly_fraction"]
+        else:                                  # market (krypto): kontinuert Kelly
             frac = kelly.continuous_kelly(opp["expected_return"], opp["volatility"])
         if frac > 0:
             scored.append({**opp, "kelly_fraction": frac})

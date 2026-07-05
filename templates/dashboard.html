@@ -338,8 +338,9 @@
         <button class="btn" onclick="getSignals()">Beregn anbefalinger</button>
       </div>
       <p class="desc" style="margin-bottom:8px">Scanner <b>alle sportsgrene</b> (fodbold, tennis,
-        basket, e-sport ...) og rangerer efter bedste value. Tænd AI-research i Settings for at få
-        et uafhængigt bud — ellers vises ingen value (med vilje).</p>
+        basket, e-sport ...) <b>og Polymarket</b> (prediction markets — kun læsning, ingen penge),
+        og rangerer efter bedste value. Tænd AI-research i Settings for at få et uafhængigt bud —
+        ellers vises ingen value (med vilje).</p>
       <table><thead><tr><th>Kamp / coin</th><th>Sport</th><th>Vind%</th><th>Odds</th><th>Value</th><th>Indsats</th></tr></thead>
         <tbody id="signals"><tr><td class="muted" colspan="6">Tryk "Beregn anbefalinger"</td></tr></tbody>
       </table>
@@ -395,6 +396,25 @@
           <input id="setOdds" type="password" placeholder="ODDS_API_KEY">
           <div class="key-status" id="statusOdds">–</div>
         </div>
+        <label>Telegram bot-token</label>
+        <div>
+          <input id="setTelegram" type="password" placeholder="fra @BotFather (se MOBIL_BESKED_GUIDE.txt)">
+          <div class="key-status" id="statusTelegram">–</div>
+        </div>
+        <label>Telegram chat-id</label>
+        <input id="setTelegramChat" type="text" placeholder="dit chat-id (tal)">
+        <label>Mobil-beskeder</label>
+        <label class="chk"><input type="checkbox" id="setNotifyEnabled"> Send beskeder til min mobil</label>
+        <label>Handels-beskeder</label>
+        <label class="chk"><input type="checkbox" id="setNotifyTrades"> Straks-besked ved køb/salg/risikobremse</label>
+        <label>Daglig status kl.</label>
+        <input id="setNotifyHour" type="number" min="0" max="23" step="1" value="19">
+        <label>Polymarket-scanner</label>
+        <label class="chk"><input type="checkbox" id="setPolymarketEnabled"> Vis Polymarket i Anbefalinger (kun læsning)</label>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn ghost" onclick="testNotify()">📱 Send testbesked til mobilen</button>
+        <span class="muted" id="notifyTestResult"></span>
       </div>
 
       <details class="adv" style="margin-top:14px">
@@ -530,6 +550,12 @@ async function loadSettings(){
   document.getElementById('setMaxOpenPositions').value=s.max_open_positions ?? 2;
   document.getElementById('setCanaryMode').checked=!!s.canary_mode;
   document.getElementById('setCanaryStake').value=s.canary_stake ?? 10;
+  document.getElementById('setTelegramChat').value=s.telegram_chat_id || '';
+  document.getElementById('setNotifyEnabled').checked=!!s.notify_enabled;
+  document.getElementById('setNotifyTrades').checked=!!s.notify_trades;
+  document.getElementById('setNotifyHour').value=s.notify_daily_hour ?? 19;
+  document.getElementById('setPolymarketEnabled').checked=!!s.polymarket_enabled;
+  renderKeyStatus(document.getElementById('statusTelegram'), providerById(s,'telegram_bot_token'));
   renderKeyStatus(document.getElementById('statusAnthropic'), providerById(s,'anthropic_api_key'));
   renderKeyStatus(document.getElementById('statusOpenai'), providerById(s,'openai_api_key'));
   renderKeyStatus(document.getElementById('statusGemini'), providerById(s,'gemini_api_key'));
@@ -542,6 +568,15 @@ async function loadSettings(){
       + `AI ${s.ai_usage.enabled ? 'tilladt' : 'slået fra'} · web ${s.ai_usage.web_search_enabled ? 'tilladt' : 'slået fra'}`;
   }
 }
+async function testNotify(){
+  const el=document.getElementById('notifyTestResult');
+  el.textContent='Sender…';
+  try{
+    const r=await (await fetch('/api/notify/test',{method:'POST'})).json();
+    el.textContent=(r.ok?'✅ ':'⚠️ ')+r.message;
+  }catch(e){ el.textContent='⚠️ Kunne ikke nå serveren.'; }
+}
+
 async function saveSettings(){
   const payload={
     anthropic_api_key:document.getElementById('setAnthropic').value,
@@ -558,11 +593,17 @@ async function saveSettings(){
     max_daily_buys:parseInt(document.getElementById('setMaxDailyBuys').value)||0,
     max_open_positions:parseInt(document.getElementById('setMaxOpenPositions').value)||0,
     canary_mode:document.getElementById('setCanaryMode').checked,
-    canary_stake:parseFloat(document.getElementById('setCanaryStake').value)||0
+    canary_stake:parseFloat(document.getElementById('setCanaryStake').value)||0,
+    telegram_bot_token:document.getElementById('setTelegram').value,
+    telegram_chat_id:document.getElementById('setTelegramChat').value,
+    notify_enabled:document.getElementById('setNotifyEnabled').checked,
+    notify_trades:document.getElementById('setNotifyTrades').checked,
+    notify_daily_hour:parseInt(document.getElementById('setNotifyHour').value)||19,
+    polymarket_enabled:document.getElementById('setPolymarketEnabled').checked
   };
   const s=await (await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify(payload)})).json();
-  ['setAnthropic','setOpenai','setGemini','setOdds'].forEach(id=>document.getElementById(id).value='');
+  ['setAnthropic','setOpenai','setGemini','setOdds','setTelegram'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('settingsLog').textContent='Settings gemt lokalt. Nye nøgler er aktive i denne serverproces.';
   await loadSettings();
 }

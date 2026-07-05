@@ -11,7 +11,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from engine import kelly, allocator, store, autotrader, exchange
+from engine import kelly, allocator, store, autotrader, exchange, polymarket, notify
 
 
 class TestKelly(unittest.TestCase):
@@ -103,6 +103,66 @@ class TestAutotraderDryRun(unittest.TestCase):
         autotrader.run_cycle()
         autotrader.flatten()
         self.assertEqual(len(autotrader.status()["positions"]), 0)
+
+
+class TestPolymarket(unittest.TestCase):
+    DEMO = [{"id": "1", "question": "Vinder X valget?", "outcomes": ["Ja", "Nej"],
+             "prices": [0.60, 0.40], "volume24h": 50000.0}]
+
+    def setUp(self):
+        self._orig_fetch = polymarket.fetch_markets
+        self._orig_est = polymarket.research.estimate_probabilities
+        polymarket.fetch_markets = lambda: [dict(m) for m in self.DEMO]
+
+    def tearDown(self):
+        polymarket.fetch_markets = self._orig_fetch
+        polymarket.research.estimate_probabilities = self._orig_est
+
+    def test_no_ai_means_no_value(self):
+        # Uden AI = markedets egne priser = nul edge (ærligt, som ved sport)
+        self.assertEqual(polymarket.find_opportunities(use_ai=False), [])
+
+    def test_ai_divergence_creates_ranked_value(self):
+        # AI mener 70% hvor markedet siger 60% -> value på "Ja"
+        polymarket.research.estimate_probabilities = lambda m, fair, o: [0.70, 0.30]
+        opps = polymarket.find_opportunities(use_ai=True)
+        self.assertEqual(len(opps), 1)
+        self.assertIn("Ja", opps[0]["name"])
+        self.assertAlmostEqual(opps[0]["value"], 0.70 / 0.60 - 1, places=6)
+        self.assertGreater(opps[0]["kelly_fraction"], 0)
+
+    def test_allocator_accepts_polymarket(self):
+        polymarket.research.estimate_probabilities = lambda m, fair, o: [0.70, 0.30]
+        actions = allocator.allocate(1000, polymarket.find_opportunities(use_ai=True))
+        self.assertEqual(len(actions), 1)
+        self.assertGreater(actions[0]["stake_dkk"], 0)
+
+
+class TestNotify(unittest.TestCase):
+    def test_not_configured_fails_gracefully(self):
+        # Uden token/chat-id: send og test_message må ikke kaste, bare sige nej
+        self.assertFalse(notify.send("hej"))
+        res = notify.test_message()
+        self.assertFalse(res["ok"])
+
+    def test_daily_report_builds_from_status(self):
+        orig = notify.build_daily_report.__globals__  # noqa: F841 (kun for læsbarhed)
+        import engine.autotrader as at
+        orig_status = at.status
+        at.status = lambda: {
+            "live": False, "equity": 210.0, "cash": 150.0, "quote": "EUR",
+            "positions": [{"symbol": "BTC/EUR", "entry": 100.0, "now": 110.0, "cost": 60.0}],
+            "history": [{"symbol": "ETH/EUR", "pnl": 5.0, "reason": "trailing-stop", "ts": 9_999_999_999}],
+            "risk": {"halted": False, "daily_return_pct": 1.2, "total_return_pct": 5.0},
+        }
+        try:
+            text = notify.build_daily_report()
+        finally:
+            at.status = orig_status
+        self.assertIn("TØR-KØRSEL", text)
+        self.assertIn("BTC/EUR", text)
+        self.assertIn("+10.0%", text)      # positionens ændring
+        self.assertIn("trailing-stop", text)
 
 
 if __name__ == "__main__":

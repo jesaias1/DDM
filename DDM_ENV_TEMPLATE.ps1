@@ -35,3 +35,7 @@ $env:DDM_AUTO_FLATTEN_ON_HALT = "1"
 
 # Valgfri live-odds til sports-anbefalinger. Ikke noedvendig for krypto-botten.
 # $env:ODDS_API_KEY = "DIN_THE_ODDS_API_KEY"
+
+# Valgfri mobil-beskeder via Telegram (nemmest at saette i Settings-fanen).
+# Se MOBIL_BESKED_GUIDE.txt for 5-minutters opsaetning.
+# $env:DDM_TELEGRAM_TOKEN = "DIN_TELEGRAM_BOT_TOKEN"

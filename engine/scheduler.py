@@ -16,7 +16,7 @@ import os
 import time
 import threading
 
-from . import autotrader, bankroll, store
+from . import autotrader, bankroll, notify, store
 
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "scheduler.json")
 MIN_INTERVAL = 15      # sekunder — undgå at hamre børs-API'et
@@ -57,6 +57,10 @@ def _one_round(cfg: dict) -> list[str]:
             log.append("[SIM] " + "; ".join(r["log"]))
         except Exception as e:
             log.append(f"simulator fejlede: {e}")
+    try:
+        notify.maybe_daily_report()  # daglig mobil-status; fejler stille
+    except Exception as e:
+        print(f"[scheduler] daglig besked fejlede: {e}")
     return log
 
 
