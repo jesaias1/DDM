@@ -116,8 +116,10 @@ def api_diagnostics():
 def api_backtest():
     data = request.get_json(silent=True) or {}
     starting = max(1.0, float(data.get("starting", 100)))
-    return jsonify(backtest.run(
+    runs = min(500, max(20, int(data.get("runs", 200))))
+    return jsonify(backtest.run_many(
         days=int(data.get("days", 200)),
+        runs=runs,
         starting=starting,
     ))
 

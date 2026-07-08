@@ -13,6 +13,7 @@ data beviser ikke noget om de RIGTIGE markeder — det viser strategiens opførs
 risikoprofil, ikke en garanti for fremtidigt afkast.
 """
 import random
+import statistics
 from . import allocator, strategy
 
 
@@ -111,4 +112,43 @@ def run(days: int = 200, n_assets: int = 5, seed: int | None = None,
         "ai_return_pct": round((ai_curve[-1] / starting - 1) * 100, 1) if ai_curve else 0.0,
         "naive_return_pct": round((naive_curve[-1] / starting - 1) * 100, 1) if naive_curve else 0.0,
         "starting": starting,
+    }
+
+
+def run_many(days: int = 200, runs: int = 200, starting: float = 200.0) -> dict:
+    """
+    Kør MANGE simulationer (faste seeds 0..runs-1) og returnér FORDELINGEN.
+
+    Hvorfor: én enkelt backtest bruger tilfældige priser, så den skifter hver gang
+    og ligner "random tal". Ved at køre fx 200 forløb med faste seeds får vi et
+    STABILT, meningsfuldt billede — samme resultat hver gang — der viser hvor ofte
+    strategien kommer i plus, medianen, og hvor slemt/godt det kan gå.
+
+    Vi viser også ét repræsentativt forløb (det tættest på medianen), så grafen
+    matcher overskriftstallet.
+    """
+    results = []  # (ai_return_pct, naive_return_pct, run_dict)
+    for seed in range(max(1, runs)):
+        r = run(days=days, seed=seed, starting=starting)
+        results.append((r["ai_return_pct"], r["naive_return_pct"], r))
+
+    ai_returns = [x[0] for x in results]
+    naive_returns = [x[1] for x in results]
+    ai_median = statistics.median(ai_returns)
+    # repræsentativt forløb: det hvis AI-afkast er tættest på medianen
+    representative = min(results, key=lambda x: abs(x[0] - ai_median))[2]
+
+    return {
+        "runs": len(results),
+        "days": days,
+        "starting": starting,
+        "ai_median_pct": round(ai_median, 1),
+        "ai_win_rate": round(sum(1 for x in ai_returns if x > 0) / len(ai_returns) * 100),
+        "ai_best_pct": round(max(ai_returns), 1),
+        "ai_worst_pct": round(min(ai_returns), 1),
+        "naive_median_pct": round(statistics.median(naive_returns), 1),
+        "naive_win_rate": round(sum(1 for x in naive_returns if x > 0) / len(naive_returns) * 100),
+        # ét repræsentativt forløb til grafen
+        "ai_curve": representative["ai_curve"],
+        "naive_curve": representative["naive_curve"],
     }

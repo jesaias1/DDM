@@ -309,12 +309,13 @@
     </div>
 
     <div class="card" id="btCard" style="display:none">
-      <h2>Backtest — 200 simulerede dage</h2>
+      <h2>Backtest — fordeling over mange forløb</h2>
       <p class="muted" id="btStats"></p>
       <canvas id="btChart"></canvas>
-      <p class="muted" style="font-size:12px">Syntetiske data med realistisk handelsfriktion og kun en
-        tynd momentum-edge. Viser strategiens risikoprofil — bedre end gambling, men taber stadig i en
-        stor del af forløbene.</p>
+      <p class="muted" style="font-size:12px">Grafen er ét repræsentativt forløb (tættest på medianen).
+        Syntetiske data med realistisk handelsfriktion og kun en tynd momentum-edge — tallene er STABILE
+        (samme hver gang), ikke tilfældige. Viser strategiens risikoprofil: bedre end gambling, men taber
+        stadig i en stor del af forløbene. Beviser intet om de rigtige markeder.</p>
     </div>
 
     <div class="card">
@@ -609,13 +610,16 @@ async function saveSettings(){
 }
 async function runBacktest(){
   const starting=parseFloat(document.getElementById('simStart').value)||currentSimStarting||100;
-  const r=await (await fetch('/api/backtest',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({days:200, starting})})).json();
   document.getElementById('btCard').style.display='block';
-  const c=v=>v>=0?'up':'down';
+  document.getElementById('btStats').innerHTML='<span class="spinner"></span> Kører 200 simulationer…';
+  const r=await (await fetch('/api/backtest',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({days:200, runs:200, starting})})).json();
+  const c=v=>v>=0?'up':'down', sgn=v=>(v>=0?'+':'')+v;
   document.getElementById('btStats').innerHTML =
-    `Strategi: <span class="${c(r.ai_return_pct)}">${r.ai_return_pct>=0?'+':''}${r.ai_return_pct}%</span> (${r.ai_final.toFixed(0)} kr) · `
-    +`Naiv gambling: <span class="${c(r.naive_return_pct)}">${r.naive_return_pct>=0?'+':''}${r.naive_return_pct}%</span> (${r.naive_final.toFixed(0)} kr)`;
+    `<b>${r.runs} simulationer à ${r.days} dage</b> (samme resultat hver gang):<br>`
+    +`Strategi: median <span class="${c(r.ai_median_pct)}">${sgn(r.ai_median_pct)}%</span> · `
+    +`i plus <b>${r.ai_win_rate}%</b> af gangene · spænd <span class="down">${sgn(r.ai_worst_pct)}%</span> til <span class="up">${sgn(r.ai_best_pct)}%</span><br>`
+    +`Naiv gambling: median <span class="${c(r.naive_median_pct)}">${sgn(r.naive_median_pct)}%</span> · i plus kun ${r.naive_win_rate}% af gangene`;
   drawChartOn('btChart', r.ai_curve.map(v=>({equity:v})), r.naive_curve.map(v=>({equity:v})), r.starting);
 }
 
