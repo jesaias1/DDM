@@ -14,7 +14,10 @@
         <img src="/static/logo.png" alt="DDM" />
         <div>
           <h1>Den Danske Metode</h1>
-          <div class="small muted">Markedsintelligens / Lokal terminal</div>
+          <div class="small muted">
+            Markedsintelligens / {{ 'Online-demo' if cloud_readonly else 'Lokal
+            terminal' }}
+          </div>
         </div>
       </div>
       <label for="username">Brugernavn</label>

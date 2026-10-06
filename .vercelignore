@@ -1,0 +1,12 @@
+.git
+.venv
+.env*
+.codex
+data
+dist
+artifacts
+server*.log
+**/__pycache__
+**/*.pyc
+*.ps1
+*.bat

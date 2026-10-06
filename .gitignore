@@ -13,3 +13,7 @@ config.json
 .env.local.ps1
 dist/
 .venv/
+.vercel/
+public/
+
+.vercel

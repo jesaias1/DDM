@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "flask",
+  "functions": {
+    "cloud/server.py": {
+      "maxDuration": 15,
+      "excludeFiles": "{data/**,dist/**,artifacts/**,tests/**,.venv/**,.git/**,server*.log,.env*}"
+    }
+  }
+}

@@ -2,3 +2,6 @@ flask>=3.0
 requests>=2.31
 anthropic>=0.40
 ccxt>=4.2
+scipy>=1.10,<2
+scikit-learn>=1.3,<2
+waitress>=3.0,<4

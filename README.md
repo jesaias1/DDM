@@ -2,6 +2,14 @@
 
 Lokal sportsintelligens med oddsjournal, deterministisk sandsynlighed/EV, konservativ risiko og en separat kryptoterminal. **Der er endnu ingen dokumenteret betting-edge.** PAPER er standard for afproevning; REAL-sport sender ingen bookmaker-ordrer.
 
+## Online-demo paa Vercel
+
+Vercel bruger `cloud.server:app`, ikke den lokale `app.py`. Online-versionen er en separat, skrivebeskyttet DEMO uden konto-/journal-synkronisering, provider-kald, API-noeglelagring, boersordrer eller baggrundsbot. Den lokale funktionalitet er uændret.
+
+Online-login kraever separate Vercel-miljoevariabler: `DDM_CLOUD_USER`, `DDM_CLOUD_PASS` (mindst 20 tegn) og `DDM_CLOUD_SESSION_SECRET` (mindst 32 tegn). Ingen standardkode accepteres i cloud. Gem aldrig disse i Git. Preview-deployments kraever deres egne miljoevariabler; deployment protection skal beholdes.
+
+En rigtig online-journal kraever permanent ekstern database og en separat worker eller en sikret forbindelse til stationaeren. Lokal SQLite og nøgler uploades ikke. Vercel-projektet er koblet til GitHub-repoet for kommende deployments.
+
 ## Start paa Windows
 
 Python 3.10 eller nyere og internet til installationen:

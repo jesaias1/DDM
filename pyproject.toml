@@ -1,0 +1,11 @@
+[project]
+name = "ddm-online-demo"
+version = "1.0.0"
+requires-python = ">=3.12,<3.13"
+dependencies = ["Flask>=3.0,<4", "requests>=2.31,<3"]
+
+[tool.vercel]
+entrypoint = "cloud.server:app"
+
+[tool.vercel.scripts]
+build = "python cloud/build_assets.py"

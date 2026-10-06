@@ -1,5 +1,6 @@
 "use strict";
 const $ = (selector, parent = document) => parent.querySelector(selector);
+const cloudReadOnly = document.body.dataset.cloudReadonly === "true";
 const esc = (value) =>
   String(value ?? "").replace(
     /[&<>"']/g,
@@ -223,6 +224,7 @@ function modeBanner() {
     `<span>${descriptions[currentMode]}</span><span class="banner-end">INGEN DOKUMENTERET EDGE</span>`;
 }
 async function navigate(view) {
+  if (cloudReadOnly && view === "crypto") view = "overview";
   if (!titles[view]) view = "overview";
   $("#navigation-menu").close();
   currentView = view;
@@ -429,6 +431,20 @@ function renderView() {
     crypto: cryptoView,
   };
   $("#view").innerHTML = views[currentView]();
+  if (cloudReadOnly) {
+    document
+      .querySelectorAll(
+        '[data-mode="PAPER"],[data-mode="REAL"],#halt,#add-funds,#toggle-halt,#settle-feed,#strategy-state,#strategy-save,#paper-start,#evaluate-history,#import-results,#import-odds,#monte-carlo,#settings-form input,#settings-form button',
+      )
+      .forEach((el) => {
+        el.disabled = true;
+        el.title = "Kun i den lokale version";
+      });
+    document
+      .querySelectorAll('a[href="/crypto"]')
+      .forEach((el) => (el.hidden = true));
+    $("#heartbeat").textContent = "Online-demo";
+  }
   icons();
   drawCharts();
 }

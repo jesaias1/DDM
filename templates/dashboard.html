@@ -23,7 +23,7 @@
       defer
     ></script>
   </head>
-  <body>
+  <body data-cloud-readonly="{{ 'true' if cloud_readonly else 'false' }}">
     <aside class="sidebar">
       <a class="brand" href="/" aria-label="Den Danske Metode"
         ><img src="/static/logo.png" alt="DDM" /><span
@@ -139,6 +139,15 @@
             </button>
           </div>
         </div>
+        {% if cloud_readonly %}
+        <div class="mode-banner">
+          <strong>ONLINE-DEMO</strong
+          ><span
+            >Skrivebeskyttet. Ingen forbindelse til din stationaer, kontodata
+            eller ordreudfoerelse.</span
+          >
+        </div>
+        {% endif %}
         <div class="mode-banner" id="mode-banner">
           <span class="tag amber">DEMO</span
           ><span
