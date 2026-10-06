@@ -620,6 +620,7 @@ async function showDetail(id) {
     `<div class="section-heading"><span>${esc(o.name)} · h2h · ${esc(o.league)}</span>${tag(o.action)}</div><div class="analysis-metrics">${metric("TILBUDTE ODDS", fmt(o.odds), esc(o.book_title))}${metric("FAIR ODDS", fmt(o.fair_odds), "DDM-estimat")}${metric("MINIMUM ODDS", fmt(o.min_odds), "Konservativ p + 2% EV")}${metric("INDSATS", money(o.stake), currentMode)}</div><div class="analysis-metrics">${metric("RÅ IMPLICIT P", pct(o.implied_p), `Margin ${pct(o.margin)}`)}${metric("NO-VIG MARKED", pct(o.market_p), `${o.reference_count} reference-books`)}${metric("DDM ESTIMAT", pct(o.p), `Buffer ±${fmt((o.uncertainty || 0) * 100, 1)} procentpoint`)}${metric("ROBUST EV", pct(o.robust_ev, true), `EV ${pct(o.ev, true)}`, color(o.robust_ev))}</div><div class="analysis-columns"><section><h3>Markeds- og modelsignaler</h3><ul>${o.reasons.map((x) => `<li>${esc(x)}</li>`).join("")}</ul><p class="small muted">${esc(o.estimate?.basis || "Intet modelgrundlag")} · Datakvalitet ${esc(o.quality)}. Likviditet: ukendt.</p></section><section><h3>Risiko og modargumenter</h3><ul>${o.counterarguments.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></section></div><h3>Prisgrundlaget</h3><div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>Bookmaker</th><th>Odds</th><th>EV</th><th>Observeret</th><th>Status</th></tr></thead><tbody>${o.books.map((b) => `<tr><td>${esc(b.book)}</td><td class="mono">${fmt(b.odds)}</td><td class="mono ${color(b.ev)}">${pct(b.ev, true)}</td><td>${date(b.updated_at)}</td><td>${tag(b.status, b.status === "FRESH" ? "gray" : "amber")}</td></tr>`).join("")}</tbody></table></div><div class="detail-actions">${o.action === "BET" && currentMode !== "REAL" ? `<button id="paper-bet" class="primary">${icon("check")}Registrer ${currentMode === "DEMO" ? "demo" : "paper"}-bet</button>` : ""}${o.action === "BET" && currentMode === "REAL" ? '<label>Faktiske odds<input id="actual-odds" type="number" step=".01" min="1.01"></label><label>Faktisk indsats<input id="actual-stake" type="number" step=".01" min=".01"></label><button id="paper-bet" class="primary">Registrer manuelt bet</button>' : ""}<button id="explain-decision">${icon("message-square-text")}Forklar beslutning</button><span class="small muted">Udløber ${date(o.expires_at)}</span></div><p id="explanation" class="small muted"></p><details><summary>Originalt input og modelversion</summary><pre class="details-code">${esc(JSON.stringify({ decision: detail.recorded_decision, availability: o, snapshot: detail.snapshot }, null, 2))}</pre></details>`;
   icons();
   $("#detail").showModal();
+  if (cloudReadOnly) $("#explain-decision").disabled = true;
 }
 async function saveSettings() {
   const s = settingsData;
@@ -766,6 +767,7 @@ document.addEventListener("click", (event) => {
     "add-funds": async () => openFund(),
     "nav-menu": async () => {
       $("#mobile-navigation").innerHTML = Object.entries(titles)
+        .filter(([v]) => !cloudReadOnly || v !== "crypto")
         .map(([v, t]) => `<button data-view="${v}">${esc(t)}</button>`)
         .join("");
       $("#navigation-menu").showModal();

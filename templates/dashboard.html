@@ -107,7 +107,10 @@
           <span class="heartbeat"
             ><span id="heartbeat-dot" class="dot"></span
             ><span id="heartbeat">Forbinder</span></span
-          ><time id="clock"></time><span class="local-tag">LOKAL</span>
+          ><time id="clock"></time
+          ><span class="local-tag"
+            >{{ 'ONLINE' if cloud_readonly else 'LOKAL' }}</span
+          >
         </div>
       </header>
       <main>
