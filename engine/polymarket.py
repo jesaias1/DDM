@@ -82,37 +82,5 @@ def find_opportunities(use_ai: bool = False) -> list[dict]:
     egne priser = ingen value (ærligt, som ved sport). AI-kald deler samme
     dagsbudget som sport-researchen.
     """
-    opps = []
-    for m in fetch_markets():
-        total = sum(m["prices"])
-        fair = [p / total for p in m["prices"]]  # normalisér spread væk
-        if use_ai:
-            our = research.estimate_probabilities({
-                "id": f"pm-{m['id']}", "home": m["question"],
-                "away": "(prediction market)", "sport": "Polymarket",
-            }, fair, m["outcomes"])
-        else:
-            our = fair
-        for name, p_market, p_ours in zip(m["outcomes"], fair, our):
-            if not MIN_PRICE <= p_market <= 1 - MIN_PRICE:
-                continue
-            odds = 1.0 / p_market
-            frac = kelly.binary_kelly(p_ours, odds)
-            value = p_ours * odds - 1
-            if frac <= 0 or value <= 1e-6:   # 1e-6: filtrér floating point-støj fra nul-edge
-                continue
-            opps.append({
-                "type": "polymarket",
-                "id": f"pm-{m['id']}:{name}",
-                "sport": "Polymarket",
-                "name": f"{m['question']} — {name}",
-                "odds": round(odds, 2),
-                "p_market": p_market,
-                "p_ours": p_ours,
-                "kelly_fraction": frac,
-                "value": value,
-                "reason": (f"Vind {p_ours*100:.1f}% (marked {p_market*100:.1f}%) "
-                           f"@ {odds:.2f} · value {value*100:+.1f}% · vol ${m['volume24h']:,.0f}"),
-            })
-    opps.sort(key=lambda x: x["value"], reverse=True)
-    return opps
+    # No independently validated probability model or executable quote exists here.
+    return []

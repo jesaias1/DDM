@@ -149,16 +149,18 @@ def _run_naive_baseline(state: dict, total_staked: float, api_key) -> None:
     """
     if total_staked <= 0 or state["naive_baseline"] <= 0:
         return
-    matches = sports.fetch_matches(api_key)
+    matches = sports.fetch_all_matches(api_key)
     if not matches:
         return
     m = random.choice(matches)
-    label = random.choice(["home", "draw", "away"])
-    odds = m["odds"][label]
-    fair = dict(zip(["home", "draw", "away"], kelly_fair(m)))
+    outcome = random.choice(m["outcomes"])
+    odds = outcome["price"]
+    from . import kelly
+    ps = kelly.remove_vig([o["price"] for o in m["outcomes"]])
+    fair = dict(zip([o["name"] for o in m["outcomes"]], ps))
     stake = min(total_staked, state["naive_baseline"])
     state["naive_baseline"] -= stake
-    if random.random() < fair[label]:
+    if random.random() < fair[outcome["name"]]:
         state["naive_baseline"] += stake * odds
 
 
@@ -212,11 +214,14 @@ def _run_cycle_locked() -> dict:
     # 2) find muligheder
     opps = []
     opps += markets.find_opportunities()
-    opps += sports.find_opportunities(api_key, use_ai=state.get("use_ai", False))
+    # Sports are recorded in the SQLite paper ledger and settled against real results.
+    # The legacy simulator is now crypto-only; no random sports outcomes enter its ledger.
 
     # 3) allokér på den NUVÆRENDE samlede pulje
     pool = equity(state)
-    actions = allocator.allocate(pool, opps)
+    held = {p["asset_id"] for p in state["positions"]}
+    opps = [o for o in opps if o["id"] not in held]
+    actions = allocator.allocate(state["cash"], opps)
 
     # 4) udfør
     total_staked = 0.0
@@ -230,7 +235,7 @@ def _run_cycle_locked() -> dict:
         total_staked += a["stake_dkk"]
 
     # 5) naiv baseline til sammenligning
-    _run_naive_baseline(state, total_staked, api_key)
+    # A random gambling baseline is not comparable to a crypto strategy.
 
     # 6) opdatér kurver
     now = int(time.time())

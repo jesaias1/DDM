@@ -46,9 +46,15 @@ def _default(starting: float = PAPER_START_EUR) -> dict:
 
 
 def reset(starting: float = PAPER_START_EUR) -> dict:
-    s = _default(starting)
-    _save(s)
-    return s
+    with store.lock_for(STATE_PATH):
+        existing = _load()
+        if existing and (existing.get("positions") or existing.get("pending_order")):
+            raise ValueError("Nulstilling afvises: aabne positioner eller uafklaret ordre")
+        if exchange.live_enabled():
+            raise ValueError("Live-regnskab kan ikke nulstilles")
+        s = _default(starting)
+        _save(s)
+        return s
 
 
 def _available_cash(state: dict) -> float:
@@ -56,15 +62,18 @@ def _available_cash(state: dict) -> float:
     if exchange.live_enabled():
         try:
             return exchange.get_quote_balance()
-        except Exception as e:
-            print(f"[autotrader] kunne ikke hente saldo, falder til tør-kørsel: {e}")
+        except Exception:
+            raise RuntimeError("Live-saldo kan ikke verificeres; handel afvises") from None
     return state.get("paper_cash", PAPER_START_EUR)
 
 
 def _positions_value(state: dict) -> float:
     total = 0.0
     for p in state["positions"]:
-        total += p["amount"] * exchange.get_price(p["symbol"]) * (1 - strategy.FEE)
+        price = exchange.get_price(p["symbol"])
+        if price <= 0:
+            raise RuntimeError("Pris mangler; risikovurdering kan ikke gennemfoeres")
+        total += p["amount"] * price * (1 - strategy.FEE)
     return total
 
 
@@ -99,23 +108,21 @@ def _ensure_risk_window(state: dict, equity: float) -> None:
     if state.get("day") != today:
         state["day"] = today
         state["day_start_equity"] = equity
-        state["halted"] = False
-        state["halt_reason"] = None
 
 
 def _risk_status(state: dict, equity: float) -> dict:
     _ensure_risk_window(state, equity)
-    day_start = float(state.get("day_start_equity") or equity or 1.0)
-    total_start = float(state.get("risk_start_equity") or state.get("paper_start") or day_start or 1.0)
-    daily_return = (equity / day_start - 1) if day_start > 0 else 0.0
-    total_return = (equity / total_start - 1) if total_start > 0 else 0.0
+    day_start = float(state.get("day_start_equity") or equity)
+    total_start = float(state.get("risk_start_equity") or state.get("paper_start") or day_start)
+    daily_return = (equity / day_start - 1) if day_start > 0 else None
+    total_return = (equity / total_start - 1) if total_start > 0 else None
     return {
         "halted": bool(state.get("halted", False)),
         "halt_reason": state.get("halt_reason"),
         "day": state.get("day"),
         "day_start_equity": round(day_start, 2),
-        "daily_return_pct": round(daily_return * 100, 2),
-        "total_return_pct": round(total_return * 100, 2),
+        "daily_return_pct": round(daily_return * 100, 2) if daily_return is not None else None,
+        "total_return_pct": round(total_return * 100, 2) if total_return is not None else None,
         "daily_loss_limit_pct": round(DAILY_LOSS_LIMIT * 100, 2),
         "total_loss_limit_pct": round(TOTAL_LOSS_LIMIT * 100, 2),
         "auto_flatten_on_halt": AUTO_FLATTEN_ON_HALT,
@@ -126,11 +133,11 @@ def _apply_risk_guard(state: dict, equity: float) -> str | None:
     risk = _risk_status(state, equity)
     if risk["halted"]:
         return risk["halt_reason"] or "handel stoppet af risikobremsen"
-    if risk["daily_return_pct"] <= DAILY_LOSS_LIMIT * 100:
+    if risk["daily_return_pct"] is not None and risk["daily_return_pct"] <= DAILY_LOSS_LIMIT * 100:
         state["halted"] = True
         state["halt_reason"] = f"dagligt tabsloft ramt ({risk['daily_return_pct']:.2f}%)"
         return state["halt_reason"]
-    if risk["total_return_pct"] <= TOTAL_LOSS_LIMIT * 100:
+    if risk["total_return_pct"] is not None and risk["total_return_pct"] <= TOTAL_LOSS_LIMIT * 100:
         state["halted"] = True
         state["halt_reason"] = f"samlet tabsloft ramt ({risk['total_return_pct']:.2f}%)"
         return state["halt_reason"]
@@ -140,7 +147,10 @@ def _apply_risk_guard(state: dict, equity: float) -> str | None:
 def clear_halt() -> dict:
     """Manuel genåbning efter risikobremsen har stoppet handel."""
     with store.lock_for(STATE_PATH):
-        state = _load() or reset()
+        state = _load() or _default()
+        _check_mode(state)
+        if state.get("pending_order"):
+            raise ValueError("Uafklaret ordre skal afstemmes med boersen foerst")
         equity = _available_cash(state) + _positions_value(state)
         state["halted"] = False
         state["halt_reason"] = None
@@ -153,7 +163,7 @@ def clear_halt() -> dict:
 
 def readiness() -> dict:
     """Samlet vurdering før lille live-test."""
-    state = _load() or reset()
+    state = _load() or _default()
     cash = _available_cash(state)
     eq = cash + _positions_value(state)
     risk = _risk_status(state, eq)
@@ -185,7 +195,13 @@ def readiness() -> dict:
 
 
 def status() -> dict:
-    state = _load() or reset()
+    with store.lock_for(STATE_PATH):
+        return _status_locked()
+
+
+def _status_locked() -> dict:
+    state = _load() or _default()
+    _check_mode(state)
     _ensure_trade_window(state)
     cash = _available_cash(state)
     eq = cash + _positions_value(state)
@@ -212,6 +228,8 @@ def status() -> dict:
             "peak": round(p.get("peak", p["entry"]), 6),
         } for p in state["positions"]],
         "history": list(reversed(state["history"][-20:])),
+        "equity_curve": state.get("equity_curve", []),
+        "pending_order": bool(state.get("pending_order")),
         "strategy": {
             "stop_loss_pct": round(strategy.STOP_LOSS * 100, 1),
             "trail_pct": round(strategy.TRAIL_PCT * 100, 1),
@@ -227,7 +245,7 @@ def _manage(state: dict, live: bool) -> list[str]:
     log = []
     keep = []
     state.setdefault("cooldowns", {})
-    for p in state["positions"]:
+    for p in list(state["positions"]):
         price = exchange.get_price(p["symbol"])
         if price <= 0:
             keep.append(p)
@@ -236,7 +254,7 @@ def _manage(state: dict, live: bool) -> list[str]:
         exit_now, reason = strategy.should_exit(p["entry"], p["peak"], price)
         if exit_now:
             if live:
-                res = exchange.market_sell(p["symbol"], p["amount"])
+                res = _submit(state, "sell", p["symbol"], p["amount"])
                 proceeds = res["proceeds"]
             else:
                 proceeds = p["amount"] * price * (1 - strategy.FEE)
@@ -249,6 +267,8 @@ def _manage(state: dict, live: bool) -> list[str]:
                 "live": live, "ts": int(time.time()),
             })
             log.append(f"Solgte {p['symbol']}: {reason}, {pnl:+.2f} {exchange.QUOTE}")
+            state["positions"].remove(p)
+            _save(state)
         else:
             keep.append(p)
     state["positions"] = keep
@@ -262,7 +282,7 @@ def _alert_if_action(log: list[str], live: bool) -> None:
         if interesting:
             notify.trade_alert(interesting, live)
     except Exception as e:
-        print(f"[autotrader] besked fejlede: {e}")
+        print(f"[autotrader] besked fejlede: {type(e).__name__}")
 
 
 def run_cycle() -> dict:
@@ -273,14 +293,18 @@ def run_cycle() -> dict:
 
 
 def _run_cycle_locked() -> dict:
-    state = _load() or reset()
+    state = _load() or _default()
     live = exchange.live_enabled()
+    _check_mode(state)
+    if state.get("pending_order"):
+        raise ValueError("Uafklaret boersordre: stop og afstem foer videre handel")
     log = []
     state.setdefault("cooldowns", {})
     _ensure_trade_window(state)
 
     # 1) styr åbne positioner
-    log += _manage(state, live)
+    if not state.get("halted"):
+        log += _manage(state, live)
 
     # 2) signaler + 3) allokering på nuværende pulje
     cash = _available_cash(state)
@@ -291,7 +315,7 @@ def _run_cycle_locked() -> dict:
             log.append(f"Risikobremse: {halt_reason}. Lukker åbne positioner.")
             _save(state)
             flat = _flatten_locked()
-            state = _load() or reset()
+            state = _load() or _default()
             return {
                 "live": live,
                 "log": log + flat["log"],
@@ -326,6 +350,9 @@ def _run_cycle_locked() -> dict:
             break
         stake = a["stake_dkk"]  # beløb i kvotevaluta (feltnavn genbrugt)
         if live:
+            if limits["max_live_stake"] <= 0 or (limits["canary_mode"] and limits["canary_stake"] <= 0):
+                log.append("Live-koeb stoppet: indsatsloftet er 0")
+                break
             if limits["max_live_stake"] > 0:
                 stake = min(stake, limits["max_live_stake"])
             if limits["canary_mode"] and not state.get("canary_done", False) and limits["canary_stake"] > 0:
@@ -336,8 +363,9 @@ def _run_cycle_locked() -> dict:
             continue
         try:
             if live:
-                fill = exchange.market_buy(a["id"], stake)
+                fill = _submit(state, "buy", a["id"], stake)
                 amount, price = fill["amount"], fill["price"]
+                stake = fill["cost"]
             else:
                 price = a["price"]
                 amount = stake * (1 - strategy.FEE) / price if price else 0
@@ -350,9 +378,15 @@ def _run_cycle_locked() -> dict:
             if live and limits["canary_mode"]:
                 state["canary_done"] = True
             cash -= stake
+            _save(state)
             log.append(f"Købte {a['id']}: {stake:.2f} {exchange.QUOTE} @ {price:.4f}")
         except Exception as e:
-            log.append(f"Køb af {a['id']} fejlede: {e}")
+            log.append(f"Koeb fejlede: {type(e).__name__}")
+            if state.get("pending_order"):
+                state["halted"] = True
+                state["halt_reason"] = "Ordrestatus er ukendt; manuel afstemning kraeves"
+                _save(state)
+                break
 
     eq = _available_cash(state) + _positions_value(state)
     state["equity_curve"].append({"ts": int(time.time()), "equity": round(eq, 2)})
@@ -372,18 +406,26 @@ def flatten() -> dict:
 
 
 def _flatten_locked() -> dict:
-    state = _load() or reset()
+    state = _load() or _default()
     live = exchange.live_enabled()
+    _check_mode(state)
+    if state.get("pending_order"):
+        raise ValueError("Uafklaret ordre: flatten afvises for at undgaa dubleret salg")
+    state["halted"] = True
+    state["halt_reason"] = state.get("halt_reason") or "Global kill switch"
+    _save(state)
     log = []
-    for p in state["positions"]:
+    for p in list(state["positions"]):
         price = exchange.get_price(p["symbol"])
+        if price <= 0:
+            raise RuntimeError("Pris mangler; lukning afvises")
         if live:
             try:
-                res = exchange.market_sell(p["symbol"], p["amount"])
+                res = _submit(state, "sell", p["symbol"], p["amount"])
                 proceeds = res["proceeds"]
             except Exception as e:
-                log.append(f"Kunne ikke sælge {p['symbol']}: {e}")
-                continue
+                log.append(f"Kunne ikke saelge {p['symbol']}: {type(e).__name__}. Position beholdes.")
+                break
         else:
             proceeds = p["amount"] * price * (1 - strategy.FEE)
             state["paper_cash"] += proceeds
@@ -393,6 +435,27 @@ def _flatten_locked() -> dict:
             "live": live, "ts": int(time.time()),
         })
         log.append(f"Lukkede {p['symbol']}: {proceeds - p['cost']:+.2f} {exchange.QUOTE}")
-    state["positions"] = []
+        state["positions"].remove(p)
+        _save(state)
     _save(state)
     return {"log": log or ["Ingen åbne positioner at lukke."]}
+
+
+def _check_mode(state):
+    live = exchange.live_enabled()
+    if any(bool(p.get("live", False)) != live for p in state.get("positions", [])):
+        raise ValueError("Live og paper-positioner maa ikke blandes. Afstem eksisterende konto foerst.")
+
+
+def _submit(state, side, symbol, value):
+    import uuid
+    if state.get("pending_order"):
+        raise ValueError("En tidligere ordre er ikke afstemt")
+    intent = {"id": uuid.uuid4().hex, "side": side, "symbol": symbol, "value": value, "ts": time.time()}
+    state["pending_order"] = intent
+    _save(state)
+    # Journal first. A crash/timeout leaves an intent that blocks automatic retries.
+    fill = exchange.market_buy(symbol, value) if side == "buy" else exchange.market_sell(symbol, value)
+    state.setdefault("execution_journal", []).append({**intent, "fill": fill, "status": "CONFIRMED"})
+    state.pop("pending_order", None)
+    return fill

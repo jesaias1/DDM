@@ -7,8 +7,12 @@ en lokal maskine der kører botten.
 """
 import importlib.util
 import os
+import math
+import json
 
-from . import store
+from . import store, secrets
+_managed_env = {}
+_original_env = {}
 
 SETTINGS_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "settings.json")
 
@@ -16,7 +20,7 @@ KEYS = {
     "anthropic_api_key": {
         "env": "ANTHROPIC_API_KEY",
         "label": "Claude / Anthropic",
-        "used_for": "AI-research på sport",
+        "used_for": "Forklaring af strukturerede sportsdata; aldrig sandsynligheder",
         "active": True,
         "package": "anthropic",
     },
@@ -67,16 +71,17 @@ PUBLIC_DEFAULTS = {
     "notify_enabled": False,
     "notify_trades": True,
     "notify_daily_hour": 19,
-    "polymarket_enabled": True,
+    "polymarket_enabled": False,
+    "sports_keys": "soccer_epl",
+    "odds_daily_request_limit": 24,
+    "sports_scan_interval": 900,
 }
 
 
 def _mask(value: str | None) -> str | None:
     if not value:
         return None
-    if len(value) <= 8:
-        return "••••"
-    return f"{value[:4]}...{value[-4:]}"
+    return "********"
 
 
 def _package_installed(name: str | None) -> bool:
@@ -84,7 +89,19 @@ def _package_installed(name: str | None) -> bool:
 
 
 def load() -> dict:
-    return store.load(SETTINGS_PATH) or {}
+    current = store.load(SETTINGS_PATH) or {}
+    encrypted = current.pop("encrypted_keys", None)
+    if encrypted:
+        current.update(json.loads(secrets.decrypt(encrypted)))
+    return current
+
+
+def _persist(current):
+    public = {k:v for k,v in current.items() if k not in KEYS}
+    private = {k:v for k,v in current.items() if k in KEYS}
+    if private:
+        public["encrypted_keys"] = secrets.encrypt(json.dumps(private))
+    store.save(SETTINGS_PATH, public)
 
 
 def save(updates: dict) -> dict:
@@ -103,31 +120,52 @@ def save(updates: dict) -> dict:
             if key in updates:
                 default = PUBLIC_DEFAULTS[key]
                 if isinstance(default, bool):
-                    current[key] = bool(updates.get(key))
+                    if not isinstance(updates[key], bool):
+                        raise ValueError(f"{key} skal vaere true/false")
+                    current[key] = updates[key]
                 elif isinstance(default, int) and not isinstance(default, bool):
-                    try:
-                        current[key] = max(0, int(updates.get(key)))
-                    except (TypeError, ValueError):
-                        current[key] = default
+                    raw = updates[key]
+                    if isinstance(raw, bool) or not isinstance(raw, (int, float)) or not math.isfinite(raw) or raw < 0 or int(raw) != raw:
+                        raise ValueError(f"{key} skal vaere et ikke-negativt heltal")
+                    current[key] = int(raw)
                 elif isinstance(default, float):
                     try:
-                        current[key] = max(0.0, float(updates.get(key)))
+                        value = float(updates.get(key))
+                        if not math.isfinite(value) or value < 0:
+                            raise ValueError(f"Ugyldig {key}")
+                        current[key] = value
                     except (TypeError, ValueError):
-                        current[key] = default
+                        raise ValueError(f"{key} skal vaere et gyldigt ikke-negativt tal") from None
                 else:
                     value = str(updates.get(key) or "").strip()
                     current[key] = value or default
-        store.save(SETTINGS_PATH, current)
+        _persist(current)
     apply_to_env()
     return status()
 
 
 def apply_to_env() -> None:
     current = load()
+    raw = store.load(SETTINGS_PATH) or {}
+    if os.name == "nt" and any(raw.get(key) for key in KEYS):
+        with store.lock_for(SETTINGS_PATH):
+            _persist(current)
     for key, meta in KEYS.items():
         value = current.get(key)
+        env_name = meta["env"]
         if value:
-            os.environ[meta["env"]] = value
+            if env_name not in _original_env:
+                _original_env[env_name] = os.environ.get(env_name)
+            os.environ[env_name] = value
+            _managed_env[env_name] = value
+        elif env_name in _managed_env:
+            if os.environ.get(env_name) == _managed_env[env_name]:
+                original = _original_env.get(env_name)
+                if original:
+                    os.environ[env_name] = original
+                else:
+                    os.environ.pop(env_name, None)
+            _managed_env.pop(env_name, None)
     model = current.get("anthropic_model")
     if model:
         os.environ["SMARTSTAKE_MODEL"] = model
@@ -170,5 +208,8 @@ def status() -> dict:
         "notify_daily_hour": int(current.get("notify_daily_hour", PUBLIC_DEFAULTS["notify_daily_hour"])),
         "polymarket_enabled": bool(current.get("polymarket_enabled", PUBLIC_DEFAULTS["polymarket_enabled"])),
         "settings_path": SETTINGS_PATH,
-        "note": "Krypto-botten bruger ingen AI-tokens. OpenAI og Gemini gemmes kun til fremtidige udvidelser; den nuværende AI-research bruger kun Claude/Anthropic og kun når AI-research er slået til.",
+        "sports_keys": current.get("sports_keys", "soccer_epl"),
+        "odds_daily_request_limit": current.get("odds_daily_request_limit", 24),
+        "sports_scan_interval": current.get("sports_scan_interval", 900),
+        "note": "AI bruges kun til valgfrie forklaringer. Kvantitative beslutninger bruger ingen AI-tokens. OpenAI/Gemini er ikke tilsluttet en aktiv motor.",
     }

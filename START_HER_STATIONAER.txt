@@ -1,73 +1,21 @@
-DEN DANSKE METODE - STATIONAER SETUP
+DEN DANSKE METODE / KVANTITATIV TERMINAL
 
-1. Pak zip-filen ud paa stationaeren.
+1. Pak ZIP ud i en fast mappe paa din stationaere.
+2. Installer Python 3.10 eller nyere.
+3. Aabn PowerShell i mappen og koer .\INSTALL_DDM.ps1.
+4. Koer .\START_DDM.ps1. Lad processen koere mens du bruger terminalen.
+5. Aabn http://127.0.0.1:5000. Login: jesaias / miebs112.
 
-2. Aabn PowerShell i mappen.
+Tilfoej selv et virtuelt EUR-beloeb i Portefolje. DEMO viser eksempelpriser.
+Til PAPER-livepriser: tilfoej The Odds API-noegle i Indstillinger. AI er ikke
+noedvendig for beregninger. Saet Strategier til PAPER og scan for nye signaler.
 
-3. Installer dependencies:
-   .\INSTALL_DDM.ps1
+REAL sport placerer ingen vaeddemaal. Krypto er en separat eksperimentel motor;
+laes README foer nogen live-aktivering. Der er ingen dokumenteret profit-edge.
 
-4. Start i toer-koersel:
-   .\START_DDM.ps1
+ZIP indeholder kode/assets/tests, men ingen noegler eller regnskaber. Noegler
+skal indtastes paa stationaer-PC'en. Eksisterende data/ skal bevares ved senere
+opgraderinger. Slet ikke gamle resultater for at faa tallene til at se bedre ud.
 
-5. Aabn:
-   http://127.0.0.1:5000
-
-6. Login:
-   jesaias / miebs112
-
-LIVE-HANDEL MED COINBASE
-
-1. Kopier DDM_ENV_TEMPLATE.ps1 til .env.local.ps1.
-
-2. Udfyld Coinbase API key/secret.
-   Brug kun view + trade.
-   Brug aldrig withdraw/transfer.
-
-3. Start appen:
-   .\START_DDM.ps1
-
-4. Log ind og koer "Preflight foer nattekoersel".
-
-5. Foerst naar preflight er OK:
-   - saet DDM_LIVE=1 i .env.local.ps1
-   - saet DDM_LIVE_ARMED=JEG_FORSTAAR_RISIKOEN
-   - genstart appen
-   - koer preflight igen
-   - start Autonom drift
-
-AI-NOEGLER
-
-Krypto-botten kraever ikke Gemini/OpenAI/Claude.
-Du kan tilfoeje AI-noegler i fanen Settings.
-AI-research er slaaet fra som standard for at spare tokens.
-
-Bruges aktivt nu:
-- Claude/ANTHROPIC_API_KEY: valgfri sports/AI-research.
-- ODDS_API_KEY: valgfri live sports-odds.
-
-Kan gemmes til senere, men bruges ikke af motoren endnu:
-- OPENAI_API_KEY
-- GEMINI_API_KEY
-
-SPAR TOKENS
-
-Krypto auto-trader bruger 0 AI-tokens.
-Hvis du slaar AI-research til sport til, styrer Settings:
-- max AI-kald pr. dag
-- tokenbudget pr. dag
-- web-soegning til/fra
-- max output pr. kald
-
-Lad AI-research vaere slaaet fra om natten, hvis du kun vil handle krypto.
-
-PC'EN SKAL
-
-- vaere taendt
-- have internet
-- ikke gaa i sleep
-- have PowerShell/app.py koerende
-
-VIGTIGT
-
-Botten kan tabe penge. Start med et lille beloeb og se om den opfoerer sig fornuftigt.
+En ny Codex-chat kan laese README, CLAUDE.md og docs/ARCHITECTURE.md for at
+fortsaette projektet. Hele denne chats historik er ikke en del af pakken.

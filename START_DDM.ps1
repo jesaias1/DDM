@@ -1,16 +1,14 @@
 $ErrorActionPreference = "Stop"
-
-if (Test-Path ".\.env.local.ps1") {
-  Write-Host "Indlaeser .env.local.ps1..."
-  . ".\.env.local.ps1"
+Set-Location -LiteralPath $PSScriptRoot
+$python = "$PSScriptRoot\.venv\Scripts\python.exe"
+if (-not (Test-Path -LiteralPath $python)) { throw "Koer INSTALL_DDM.ps1 foerst." }
+if (Test-Path -LiteralPath "$PSScriptRoot\.env.local.ps1") {
+    . "$PSScriptRoot\.env.local.ps1"
 } else {
-  Write-Host "Ingen .env.local.ps1 fundet. Starter i toer-koersel uden rigtige handler."
-  Write-Host "Kopier DDM_ENV_TEMPLATE.ps1 til .env.local.ps1 for live/Coinbase."
+    $env:DDM_LIVE = "0"
+    $env:SMARTSTAKE_LIVE = "0"
+    Write-Host "Starter uden rigtige kryptohandler."
 }
-
-$python = Get-Command py -ErrorAction SilentlyContinue
-if ($python) {
-  py app.py
-} else {
-  python app.py
-}
+Write-Host "Lokal terminal: http://127.0.0.1:5000 (Ctrl+C stopper serveren)"
+& $python "$PSScriptRoot\app.py"
+if ($LASTEXITCODE -ne 0) { throw "Serveren stoppede med en fejl." }

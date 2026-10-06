@@ -9,20 +9,83 @@ Ellers kører alt i tør-kørsel/simulering.
 """
 import os
 import time
+import secrets
+import hmac
+import threading
+from collections import defaultdict, deque
 from datetime import timedelta
 
 from flask import (Flask, jsonify, request, render_template, session,
                    redirect, url_for)
 
-from engine import (bankroll, backtest, research, markets, sports, allocator,
+from engine import (bankroll, research, markets, sports, allocator,
                     autotrader, scheduler, auth, exchange, settings, notify,
                     polymarket)
+from engine import database, terminal_api
 
 app = Flask(__name__)
 app.secret_key = auth.secret_key()
 app.permanent_session_lifetime = timedelta(days=30)
 STARTED_AT = int(time.time())
 settings.apply_to_env()
+database.initialize()
+app.register_blueprint(terminal_api.api)
+app.config.update(MAX_CONTENT_LENGTH=5*1024*1024, SESSION_COOKIE_HTTPONLY=True,
+                  SESSION_COOKIE_SAMESITE="Strict")
+_login_attempts = defaultdict(deque)
+_login_lock = threading.Lock()
+
+
+def csrf_token():
+    if "csrf" not in session:
+        session["csrf"] = secrets.token_hex(32)
+    return session["csrf"]
+
+
+app.jinja_env.globals["csrf_token"] = csrf_token
+
+
+@app.before_request
+def check_origin_and_csrf():
+    if request.host.split(":")[0] not in {"127.0.0.1", "localhost"}:
+        return jsonify({"error": "Kun lokale hostnavne er tilladt"}), 400
+    if request.method not in ("POST", "PUT", "DELETE", "PATCH"):
+        return None
+    expected = session.get("csrf", "")
+    supplied = request.headers.get("X-CSRF-Token", "") or request.form.get("csrf_token", "")
+    if not expected or not hmac.compare_digest(expected, supplied):
+        return jsonify({"error": "Session eller CSRF-token er ugyldig. Genindlaes siden."}), 403
+
+
+@app.after_request
+def security_headers(response):
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "same-origin"
+    if request.path.startswith("/api/"):
+        response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+@app.errorhandler(ValueError)
+def invalid_input(error):
+    return jsonify({"error": str(error)}), 400
+
+
+@app.errorhandler(413)
+def upload_too_large(error):
+    return jsonify({"error": "Importen overstiger 5 MB"}), 413
+
+
+@app.errorhandler(Exception)
+def server_error(error):
+    from werkzeug.exceptions import HTTPException
+    if isinstance(error, HTTPException):
+        return error
+    # Don't log exception text: provider errors may embed API credentials.
+    from engine.observability import emit
+    emit("request_failed", endpoint=request.endpoint, error_type=type(error).__name__)
+    return jsonify({"error": "Handlingen kunne ikke gennemfoeres. Fejltype: "+type(error).__name__}), 503
 
 
 # ---------- login ----------
@@ -40,7 +103,16 @@ def require_login():
 def login():
     error = None
     if request.method == "POST":
+        with _login_lock:
+            attempts = _login_attempts[request.remote_addr]
+            now = time.monotonic()
+            while attempts and attempts[0] < now-300:
+                attempts.popleft()
+            if len(attempts) >= 10:
+                return render_template("login.html", error="For mange forsoeg. Vent fem minutter."), 429
+            attempts.append(now)
         if auth.check(request.form.get("username", ""), request.form.get("password", "")):
+            session.clear()
             session.permanent = True
             session["user"] = request.form.get("username")
             return redirect(url_for("index"))
@@ -48,7 +120,7 @@ def login():
     return render_template("login.html", error=error)
 
 
-@app.route("/logout")
+@app.route("/logout", methods=["POST"])
 def logout():
     session.clear()
     return redirect(url_for("login"))
@@ -58,6 +130,11 @@ def logout():
 
 @app.route("/")
 def index():
+    return render_template("dashboard.html", user=session.get("user"))
+
+
+@app.route("/crypto")
+def crypto():
     return render_template("dashboard.html", user=session.get("user"))
 
 
@@ -114,14 +191,8 @@ def api_diagnostics():
 
 @app.route("/api/backtest", methods=["POST"])
 def api_backtest():
-    data = request.get_json(silent=True) or {}
-    starting = max(1.0, float(data.get("starting", 100)))
-    runs = min(500, max(20, int(data.get("runs", 200))))
-    return jsonify(backtest.run_many(
-        days=int(data.get("days", 200)),
-        runs=runs,
-        starting=starting,
-    ))
+    return jsonify({"error": "Syntetisk backtest er pensioneret. Brug Strategilab med dokumenteret historik.",
+                    "replacement": "/api/terminal/lab/evaluate", "edge_proven": False}), 410
 
 
 @app.route("/api/ai", methods=["POST"])
@@ -192,6 +263,7 @@ def api_live_cycle():
 
 @app.route("/api/live/flatten", methods=["POST"])
 def api_live_flatten():
+    scheduler.stop()
     return jsonify(autotrader.flatten())
 
 
@@ -203,7 +275,8 @@ def api_live_clear_halt():
 @app.route("/api/live/reset", methods=["POST"])
 def api_live_reset():
     data = request.get_json(silent=True) or {}
-    autotrader.reset(max(1.0, float(data.get("starting", autotrader.PAPER_START_EUR))))
+    from engine import quant
+    autotrader.reset(quant.number(data.get("starting", autotrader.PAPER_START_EUR), 0, 1e7))
     return jsonify({"ok": True})
 
 
@@ -246,6 +319,7 @@ def api_sched_start():
         interval=int(data.get("interval", 60)),
         run_live=bool(data.get("run_live", True)),
         run_sim=bool(data.get("run_sim", False)),
+        run_sports=bool(data.get("run_sports", False)),
     ))
 
 
@@ -258,5 +332,14 @@ if __name__ == "__main__":
     print("Den Danske Metode koerer paa http://localhost:5000")
     print(f"  Login: bruger '{auth.USERNAME}'")
     print(f"  Auto-trader live-handel: {'JA' if exchange.live_enabled() else 'nej (toer-koersel)'}")
-    scheduler.resume_if_enabled()
-    app.run(host="127.0.0.1", port=5000, debug=False)
+    from waitress import create_server
+    from engine import process_lock
+    with process_lock.acquire():
+        # Bind successfully before a persisted live scheduler can send any orders.
+        server = create_server(app, host="127.0.0.1", port=int(os.environ.get("DDM_PORT", "5000")), threads=8)
+        scheduler.resume_if_enabled()
+        try:
+            server.run()
+        finally:
+            scheduler.stop()
+            server.close()

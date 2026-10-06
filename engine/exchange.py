@@ -107,7 +107,7 @@ def preflight() -> dict:
                 msg += f"; mangler: {', '.join(missing[:5])}"
             add("markeder", public_ok, msg)
         except Exception as e:
-            add("markeder", False, f"kunne ikke hente markeder: {e}")
+            add("markeder", False, f"kunne ikke hente markeder: {type(e).__name__}")
 
     balance_ok = False
     balance = None
@@ -117,7 +117,7 @@ def preflight() -> dict:
             balance_ok = True
             add("saldo", True, f"kunne læse fri saldo: {balance:.2f} {QUOTE}")
         except Exception as e:
-            add("saldo", False, f"kunne ikke læse saldo med nøgler: {e}")
+            add("saldo", False, f"kunne ikke læse saldo med nøgler: {type(e).__name__}")
     else:
         add("saldo", False, "springes over indtil API-nøgler er sat")
 
@@ -155,7 +155,7 @@ def fetch_signals() -> list[dict]:
         try:
             ohlcv = ex.fetch_ohlcv(symbol, timeframe="1d", limit=strategy.LOOKBACK)
         except Exception as e:
-            print(f"[exchange] {symbol}: kunne ikke hente candles: {e}")
+            print(f"[exchange] {symbol}: kunne ikke hente candles: {type(e).__name__}")
             continue
         if len(ohlcv) < strategy.TREND_LEN + 1:
             continue
@@ -180,7 +180,7 @@ def get_price(symbol: str) -> float:
     try:
         return _client(with_keys=False).fetch_ticker(symbol)["last"]
     except Exception as e:
-        print(f"[exchange] pris {symbol} fejlede: {e}")
+        print(f"[exchange] pris {symbol} fejlede: {type(e).__name__}")
         return 0.0
 
 
@@ -200,12 +200,16 @@ def market_buy(symbol: str, quote_amount: float) -> dict:
 
     Respekterer børsens minimums-ordrestørrelse, så ordren ikke afvises.
     """
+    if not live_enabled():
+        raise ValueError("Live-handel er ikke armet")
+    from . import quant
+    quote_amount = quant.number(quote_amount, .01, 1e7)
     ex = _client(with_keys=True)
     ex.load_markets()
     price = get_price(symbol)
     if price <= 0:
         raise RuntimeError(f"ugyldig pris for {symbol}")
-    amount = quote_amount / price
+    amount = quote_amount / (price * (1+strategy.FEE))
 
     # Tjek børsens minimums-grænser (mængde og kostpris) hvis de findes.
     limits = (ex.markets.get(symbol) or {}).get("limits", {})
@@ -218,9 +222,7 @@ def market_buy(symbol: str, quote_amount: float) -> dict:
 
     amount = float(ex.amount_to_precision(symbol, amount))  # afrund til børsens præcision
     order = ex.create_market_buy_order(symbol, amount)
-    filled = float(order.get("filled") or amount)
-    avg = float(order.get("average") or price)
-    return {"amount": filled, "price": avg}
+    return _confirmed_fill(order, symbol, "buy")
 
 
 def deposit_address(currency: str) -> dict:
@@ -242,13 +244,44 @@ def deposit_address(currency: str) -> dict:
             "currency": currency,
         }
     except Exception as e:
-        return {"error": str(e)}
+        return {"error": type(e).__name__}
 
 
 def market_sell(symbol: str, amount: float) -> dict:
     """Sælg en base-mængde til markedspris. Returnerer {proceeds, price}."""
+    if not live_enabled():
+        raise ValueError("Live-handel er ikke armet")
+    from . import quant
+    amount = quant.number(amount, .00000000001)
     ex = _client(with_keys=True)
     order = ex.create_market_sell_order(symbol, amount)
-    price = float(order.get("average") or get_price(symbol))
-    proceeds = float(order.get("cost") or amount * price)
-    return {"proceeds": proceeds, "price": price}
+    return _confirmed_fill(order, symbol, "sell", expected_amount=amount)
+
+
+def _confirmed_fill(order, symbol, side, expected_amount=None):
+    from . import quant
+    if order.get("status") != "closed" or not order.get("id"):
+        raise RuntimeError("Ordre er ikke bekraeftet afsluttet; manuel afstemning kraeves")
+    filled = quant.number(order.get("filled"), .00000000001)
+    if expected_amount is not None and abs(filled-expected_amount) > max(1e-12, expected_amount*1e-8):
+        raise RuntimeError("Delvist salg; resterende position skal afstemmes manuelt")
+    cost = quant.number(order.get("cost"), .00000000001)
+    price = quant.number(order.get("average"), .00000000001)
+    base, quote = symbol.split("/")
+    fees = order.get("fees") or ([order["fee"]] if order.get("fee") else [])
+    if not fees:
+        raise RuntimeError("Ordregebyrer er ukendte; manuel afstemning kraeves")
+    base_fee = quote_fee = 0.0
+    for fee in fees:
+        value = quant.number(fee.get("cost"), 0)
+        if fee.get("currency") == base:
+            base_fee += value
+        elif fee.get("currency") == quote:
+            quote_fee += value
+        elif value:
+            raise RuntimeError("Tredjevaluta-gebyr skal afstemmes manuelt")
+    if side == "sell" and base_fee:
+        raise RuntimeError("Salg med base-gebyr skal afstemmes manuelt")
+    return {"order_id": str(order["id"]), "amount": filled-base_fee if side == "buy" else filled,
+            "price": price, "cost": cost+quote_fee, "proceeds": cost-quote_fee,
+            "status": "CONFIRMED", "fees": fees}

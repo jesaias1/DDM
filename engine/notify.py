@@ -54,7 +54,7 @@ def send(text: str) -> bool:
         )
         return bool(r.ok and r.json().get("ok"))
     except Exception as e:
-        print(f"[notify] kunne ikke sende Telegram-besked: {e}")
+        print(f"[notify] kunne ikke sende Telegram-besked: {type(e).__name__}")
         return False
 
 
@@ -93,7 +93,11 @@ def build_daily_report() -> str:
     if risk.get("halted"):
         lines.append(f"⛔ Risikobremse aktiv: {risk.get('halt_reason')}")
     else:
-        lines.append(f"Dag: {risk.get('daily_return_pct', 0):+.2f}% · total: {risk.get('total_return_pct', 0):+.2f}%")
+        daily, total = risk.get('daily_return_pct'), risk.get('total_return_pct')
+        if daily is None or total is None:
+            lines.append("Afkast: afventer finansieret pulje")
+        else:
+            lines.append(f"Dag: {daily:+.2f}% · total: {total:+.2f}%")
     return "\n".join(lines)
 
 
@@ -116,7 +120,7 @@ def maybe_daily_report() -> bool:
         try:
             ok = send(build_daily_report())
         except Exception as e:
-            print(f"[notify] daglig rapport fejlede: {e}")
+            print(f"[notify] daglig rapport fejlede: {type(e).__name__}")
             return False
         if ok:
             state["last_daily"] = today

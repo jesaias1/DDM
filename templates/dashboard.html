@@ -1,863 +1,222 @@
 <!doctype html>
 <html lang="da">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Den Danske Metode</title>
-<style>
-  :root {
-    color-scheme: dark;
-    --bg:#0a0e14; --panel:#12181f; --panel2:#171e27; --border:#232c38;
-    --text:#eaf0f7; --muted:#909bab; --blue:#3b8eef; --green:#46c97e; --red:#f0655e; --amber:#e0b24a;
-    --radius:16px;
-  }
-  * { box-sizing: border-box; }
-  body { margin:0; font-family: system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-         background:
-           radial-gradient(900px 500px at 100% -5%, #14202e 0%, rgba(20,32,46,0) 55%),
-           var(--bg);
-         color: var(--text); font-size:14.5px; line-height:1.5; }
-
-  header { position:sticky; top:0; z-index:10; display:flex; align-items:center; gap:16px;
-           padding:12px 22px; background:#0b1118e6; backdrop-filter:blur(10px);
-           border-bottom:1px solid var(--border); flex-wrap:wrap; }
-  .brand-wrap { display:flex; align-items:center; gap:11px; }
-  .logo-img { width:38px; height:38px; border-radius:10px; background:#fff; padding:3px; object-fit:contain;
-              box-shadow:0 2px 10px rgba(0,0,0,.3); }
-  .brand { font-weight:800; font-size:16px; letter-spacing:.2px; line-height:1.1; }
-  .brand small { display:block; font-weight:500; font-size:11px; color:var(--muted); letter-spacing:.3px; }
-  .hsum { margin-left:auto; display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
-  .hstat { text-align:right; }
-  .hstat .l { font-size:11px; color:var(--muted); }
-  .hstat .v { font-size:16px; font-weight:700; }
-  .badge { padding:5px 12px; border-radius:999px; font-size:11.5px; font-weight:700; letter-spacing:.3px; }
-  .badge.sim { background:#16271d; color:var(--green); }
-  .badge.live { background:#311517; color:var(--red); }
-  .runpill { display:inline-flex; align-items:center; gap:7px; border:1px solid var(--border);
-             background:var(--panel2); color:var(--muted); padding:5px 11px; border-radius:999px;
-             font-size:12px; font-weight:700; }
-  .dot { width:8px; height:8px; border-radius:999px; background:var(--muted); display:inline-block; }
-  .runpill.ok { color:var(--green); border-color:#24553a; }
-  .runpill.ok .dot { background:var(--green); box-shadow:0 0 0 0 rgba(70,201,126,.7); animation:pulse 1.4s infinite; }
-  .runpill.warn { color:var(--amber); border-color:#5a4a1f; }
-  .runpill.warn .dot { background:var(--amber); }
-  .runpill.bad { color:var(--red); border-color:#5a1f1f; }
-  .runpill.bad .dot { background:var(--red); }
-  @keyframes pulse { 0% { box-shadow:0 0 0 0 rgba(70,201,126,.6); }
-                     70% { box-shadow:0 0 0 8px rgba(70,201,126,0); }
-                     100% { box-shadow:0 0 0 0 rgba(70,201,126,0); } }
-  .logout { color:var(--muted); text-decoration:none; font-size:13px; border:1px solid var(--border);
-            padding:7px 13px; border-radius:9px; }
-  .logout:hover { color:var(--text); border-color:#3a4250; }
-
-  nav.tabs { display:flex; gap:6px; padding:10px 22px; border-bottom:1px solid var(--border);
-             background:#0b1118cc; backdrop-filter:blur(10px);
-             position:sticky; top:63px; z-index:9; overflow-x:auto; }
-  .tab { padding:9px 15px; border:0; background:none; color:var(--muted); font-size:14px;
-         font-weight:600; cursor:pointer; border-radius:9px; white-space:nowrap; transition:.12s; }
-  .tab:hover { color:var(--text); background:var(--panel2); }
-  .tab.active { color:#fff; background:var(--blue); }
-
-  main { max-width:920px; margin:0 auto; padding:26px 22px 70px; }
-  .page { display:none; }
-  .page.active { display:block; animation:fade .25s ease; }
-  @keyframes fade { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:none; } }
-
-  .card { background:var(--panel); border:1px solid var(--border); border-radius:var(--radius);
-          padding:22px; margin-bottom:16px; box-shadow:0 1px 2px rgba(0,0,0,.2); }
-  .card h2 { margin:0 0 5px; font-size:16px; }
-  .card .desc { color:var(--muted); font-size:13px; margin:0 0 16px; line-height:1.55; }
-
-  .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; }
-  .stat { background:var(--panel2); border:1px solid var(--border); border-radius:12px; padding:15px; }
-  .stat .l { font-size:12px; color:var(--muted); }
-  .stat .v { font-size:23px; font-weight:700; margin-top:4px; }
-  .up { color:var(--green); } .down { color:var(--red); }
-
-  .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-  .row + .row { margin-top:12px; }
-  button.btn { background:var(--blue); color:#fff; border:0; padding:11px 18px; border-radius:10px;
-               font-size:14px; font-weight:600; cursor:pointer; transition:.12s; }
-  button.btn:hover { filter:brightness(1.1); }
-  button.btn.ghost { background:var(--panel2); border:1px solid var(--border); color:var(--text); }
-  button.btn.ghost:hover { border-color:#3a4250; filter:none; }
-  button.btn.danger { background:#5a1f1f; }
-  button.btn:disabled { opacity:.5; cursor:default; }
-  input,select { background:var(--bg); border:1px solid var(--border); color:var(--text);
-                 padding:10px 12px; border-radius:9px; font-size:14px; }
-  input:focus,select:focus { outline:none; border-color:var(--blue); }
-  input[type=number]{ width:120px; }
-  label.chk { display:inline-flex; align-items:center; gap:8px; background:var(--panel2);
-              border:1px solid var(--border); padding:9px 14px; border-radius:9px; cursor:pointer; }
-  .formgrid { display:grid; grid-template-columns:180px minmax(0,1fr); gap:12px; align-items:center; }
-  .formgrid input,.formgrid select { width:100%; }
-  .key-status { font-size:12px; color:var(--muted); margin-top:4px; }
-
-  /* sammenklappelige "avanceret"-sektioner — holder standardvisningen rolig */
-  details.adv { border:1px solid var(--border); border-radius:12px; background:var(--panel2);
-                margin-top:8px; overflow:hidden; }
-  details.adv > summary { cursor:pointer; padding:13px 16px; font-weight:600; font-size:13.5px;
-                          color:var(--text); list-style:none; display:flex; align-items:center; gap:8px; }
-  details.adv > summary::-webkit-details-marker { display:none; }
-  details.adv > summary::before { content:"▸"; color:var(--muted); transition:.15s; }
-  details.adv[open] > summary::before { transform:rotate(90deg); }
-  details.adv > summary:hover { color:var(--blue); }
-  .adv-body { padding:0 16px 16px; }
-
-  table { width:100%; border-collapse:collapse; font-size:13px; margin-top:8px; }
-  th,td { text-align:left; padding:10px 10px; border-bottom:1px solid var(--border); }
-  th { color:var(--muted); font-weight:500; }
-  .muted { color:var(--muted); }
-  .log { font-family:ui-monospace,Menlo,monospace; font-size:12px; background:#080c11;
-         border:1px solid var(--border); border-radius:10px; padding:13px; white-space:pre-wrap;
-         max-height:180px; overflow:auto; color:#9fb1c1; margin-top:12px; }
-  canvas { width:100%; height:240px; background:#080c11; border:1px solid var(--border); border-radius:10px; }
-
-  .note { border-radius:12px; padding:13px 16px; font-size:13px; line-height:1.55; }
-  .note.info { background:#0d1f2d; border:1px solid #1f4a6b; color:#9fc8e8; }
-  .note.warn { background:#231808; border:1px solid #5a3a1f; color:var(--amber); }
-  .note.ok   { background:#0d2417; border:1px solid #1f5a3a; color:#7fd6a0; }
-  .addr { font-family:ui-monospace,monospace; font-size:13px; background:#080c11; border:1px solid var(--border);
-          border-radius:9px; padding:11px; word-break:break-all; margin-top:8px; }
-  code { background:#080c11; padding:2px 6px; border-radius:5px; font-size:12px; }
-  .step { display:flex; gap:11px; margin-top:11px; align-items:flex-start; }
-  .step .n { flex:0 0 25px; height:25px; border-radius:50%; background:var(--blue); color:#fff;
-             display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; }
-
-  /* "programmet kører"-animationer */
-  .spinner { width:13px; height:13px; border:2px solid rgba(255,255,255,.25); border-top-color:#fff;
-             border-radius:50%; display:inline-block; vertical-align:-2px; animation:spin .7s linear infinite; }
-  @keyframes spin { to { transform:rotate(360deg); } }
-  .dots::after { content:''; display:inline-block; width:1.2em; text-align:left;
-                 animation:dots 1.2s steps(4,end) infinite; }
-  @keyframes dots { 0%{content:''} 25%{content:'.'} 50%{content:'..'} 75%{content:'...'} }
-  .actbar { height:7px; border-radius:7px; background:var(--panel2); overflow:hidden;
-            margin-top:14px; position:relative; display:none; }
-  .actbar.on { display:block; }
-  .actbar > span { position:absolute; left:-38%; width:38%; height:100%; border-radius:7px;
-                   background:linear-gradient(90deg, transparent, var(--blue), transparent);
-                   animation:sweep 1.25s ease-in-out infinite; }
-  @keyframes sweep { 0%{left:-38%} 100%{left:100%} }
-  .countdown { font-size:15px; font-weight:700; color:var(--green); margin-top:10px; display:flex;
-               align-items:center; gap:8px; }
-  .countdown.idle { color:var(--muted); font-weight:500; }
-</style>
-</head>
-<body>
-<header>
-  <div class="brand-wrap">
-    <img class="logo-img" src="/static/logo.png" alt="DDM logo">
-    <div class="brand">Den Danske Metode<small>AI-handel & anbefalinger</small></div>
-  </div>
-  <div class="hsum">
-    <span class="badge sim" id="hBadge">TØR-KØRSEL</span>
-    <span class="runpill warn" id="runPill"><span class="dot"></span><span id="runText">Forbinder...</span></span>
-    <div class="hstat"><div class="l" id="hEquityLabel">Auto-trader pulje</div><div class="v" id="hEquity">–</div></div>
-    <a class="logout" href="/logout">Log ud</a>
-  </div>
-</header>
-
-<nav class="tabs">
-  <button class="tab active" data-tab="trader">Auto-trader</button>
-  <button class="tab" data-tab="deposit">Indbetal</button>
-  <button class="tab" data-tab="sim">Simulator</button>
-  <button class="tab" data-tab="tips">Anbefalinger</button>
-  <button class="tab" data-tab="settings">Settings</button>
-</nav>
-
-<main>
-  <!-- ============ AUTO-TRADER ============ -->
-  <section class="page active" id="page-trader">
-    <div class="card">
-      <h2>Status</h2>
-      <p class="desc">Den lovlige "indbetal → AI styrer → hæv ud"-loop på krypto. Handler kun for
-        rigtige penge når <code>DDM_LIVE=1</code> + dine nøgler er sat — ellers tør-kørsel.</p>
-      <div class="stats">
-        <div class="stat"><div class="l">Tilstand</div><div class="v" id="tMode">–</div></div>
-        <div class="stat"><div class="l">Børs</div><div class="v" id="tEx">–</div></div>
-        <div class="stat"><div class="l">Kontant</div><div class="v" id="tCash">–</div></div>
-        <div class="stat"><div class="l">Pulje (equity)</div><div class="v" id="tEq">–</div></div>
-        <div class="stat"><div class="l">Strategi</div><div class="v" id="tStrategy">–</div></div>
-        <div class="stat"><div class="l">Risikobremse</div><div class="v" id="tRisk">–</div></div>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Autonom drift</h2>
-      <p class="desc">Lad den køre helt af sig selv — også når browseren er lukket. Overlever genstart.
-        Det er den ægte "sæt op og glem".</p>
-      <div class="note info" style="margin-bottom:14px">Status: <b id="schedState">indlæser…</b>
-        <span class="muted" id="schedTiming"></span><br>
-        <span class="muted" id="heartbeatText">Server heartbeat: venter...</span>
-        <div class="countdown idle" id="schedCountdown">Tryk "Start autonom" for at lade den køre selv.</div>
-        <div class="actbar" id="actBar"><span></span></div></div>
-      <div class="row">
-        <button class="btn" onclick="schedStart()">Start autonom</button>
-        <button class="btn ghost" onclick="schedStop()">Stop</button>
-        <label>hvert <input type="number" id="schedInterval" value="60" min="15" step="15"> sek</label>
-        <label class="chk"><input type="checkbox" id="schedLive" checked> Auto-trader</label>
-        <label class="chk"><input type="checkbox" id="schedSim"> Simulator</label>
-      </div>
-      <div class="log" id="schedLog">—</div>
-    </div>
-
-    <details class="adv">
-      <summary>Tjek før rigtige penge (preflight & klar-tjek)</summary>
-      <div class="adv-body">
-        <p class="desc">Tjekker opsætningen uden at sende ordrer. Live kræver <code>DDM_LIVE=1</code>,
-          API-nøgler og <code>DDM_LIVE_ARMED=JEG_FORSTAAR_RISIKOEN</code>.</p>
-        <div class="row">
-          <button class="btn ghost" onclick="runPreflight()">Kør preflight</button>
-          <button class="btn ghost" onclick="runReadiness()">Klar til d.1?</button>
-          <button class="btn ghost" onclick="clearHalt()">Ophæv risikobremse</button>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
+    <title>Den Danske Metode | Markedsterminal</title>
+    <link rel="icon" href="{{ url_for('static', filename='logo.png') }}" />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='terminal.css') }}"
+    />
+    <script
+      src="{{ url_for('static', filename='vendor/lucide.js') }}"
+      defer
+    ></script>
+    <script
+      src="{{ url_for('static', filename='terminal.js') }}"
+      defer
+    ></script>
+    <script
+      src="{{ url_for('static', filename='crypto-terminal.js') }}"
+      defer
+    ></script>
+  </head>
+  <body>
+    <aside class="sidebar">
+      <a class="brand" href="/" aria-label="Den Danske Metode"
+        ><img src="/static/logo.png" alt="DDM" /><span
+          >DEN DANSKE<br />METODE<span class="brand-sub"
+            >MARKEDSINTELLIGENS</span
+          ></span
+        ></a
+      >
+      <div class="sidebar-label">TERMINAL</div>
+      <nav id="navigation" aria-label="Primaer navigation">
+        <button data-view="overview" class="active">
+          <i data-lucide="layout-dashboard"></i>Overblik
+        </button>
+        <button data-view="opportunities">
+          <i data-lucide="scan-line"></i>Muligheder<span
+            id="nav-count"
+            class="nav-count"
+            >0</span
+          >
+        </button>
+        <button data-view="markets">
+          <i data-lucide="chart-no-axes-combined"></i>Markeder
+        </button>
+        <button data-view="portfolio">
+          <i data-lucide="wallet"></i>Portefølje
+        </button>
+        <button data-view="strategies">
+          <i data-lucide="flask-conical"></i>Strategier
+        </button>
+        <button data-view="analytics">
+          <i data-lucide="chart-scatter"></i>Analyse
+        </button>
+        <button data-view="lab">
+          <i data-lucide="workflow"></i>Strategilab
+        </button>
+        <button data-view="models">
+          <i data-lucide="brain-circuit"></i>Modeller
+        </button>
+        <button data-view="history">
+          <i data-lucide="history"></i>Historik
+        </button>
+        <button
+          id="nav-menu"
+          class="mobile-nav-slot"
+          aria-label="Alle visninger"
+        >
+          <i data-lucide="menu"></i>Alle visninger
+        </button>
+      </nav>
+      <div class="sidebar-bottom">
+        <a href="/crypto"
+          ><i data-lucide="bitcoin"></i>Kryptoterminal<i
+            data-lucide="arrow-up-right"
+          ></i
+        ></a>
+        <button data-view="settings">
+          <i data-lucide="sliders-horizontal"></i>Indstillinger
+        </button>
+        <div class="user">
+          <span class="avatar">J</span
+          ><span>{{ user }}<small>Lokal arbejdsstation</small></span>
+          <form method="post" action="/logout">
+            <input
+              type="hidden"
+              name="csrf_token"
+              value="{{ csrf_token() }}"
+            /><button class="icon-button" title="Log ud" aria-label="Log ud">
+              <i data-lucide="log-out"></i>
+            </button>
+          </form>
         </div>
-        <div class="log" id="preflightLog">Kør preflight før du starter autonom handel med rigtige penge.</div>
       </div>
-    </details>
-
-    <details class="adv">
-      <summary>Manuel styring, positioner & kill switch</summary>
-      <div class="adv-body">
-        <div class="note warn" style="margin-bottom:14px"><b>Sikkerhed:</b> opret din API-nøgle med
-          <b>KUN handels-rettigheder, aldrig udbetaling</b> — så kan ingen trække penge ud af din konto.
-          Kører i tør-kørsel indtil du sætter <code>DDM_LIVE=1</code> + nøgler.</div>
-        <div class="row">
-          <button class="btn" id="liveCycleBtn" onclick="liveCycle()">Kør én cyklus</button>
-          <button class="btn ghost" id="liveAutoBtn" onclick="toggleLiveAuto()">Auto (30s)</button>
-          <button class="btn danger" onclick="liveFlatten()">Kill switch (sælg alt)</button>
+    </aside>
+    <div class="workspace">
+      <header class="topbar">
+        <div class="breadcrumb">
+          <span>DDM</span><i data-lucide="chevron-right"></i
+          ><span id="breadcrumb">Overblik</span>
         </div>
-        <div class="row">
-          <label>Nulstil demo-pulje til <input type="number" id="liveStart" placeholder="valgfrit" min="0" step="50"> <span id="liveQuote">EUR</span></label>
-          <button class="btn ghost" onclick="liveReset()">Nulstil</button>
+        <div class="topbar-right">
+          <span class="heartbeat"
+            ><span id="heartbeat-dot" class="dot"></span
+            ><span id="heartbeat">Forbinder</span></span
+          ><time id="clock"></time><span class="local-tag">LOKAL</span>
         </div>
-        <table><thead><tr><th>Par</th><th>Mængde</th><th>Købspris</th><th>Top</th><th>Pris nu</th><th>Kostpris</th></tr></thead>
-          <tbody id="livePositions"><tr><td class="muted" colspan="6">Ingen åbne positioner</td></tr></tbody>
-        </table>
-        <div class="log" id="liveLog">Tryk "Kør én cyklus" for at lade motoren handle.</div>
-      </div>
-    </details>
-  </section>
-
-  <!-- ============ INDBETAL ============ -->
-  <section class="page" id="page-deposit">
-    <div class="card">
-      <h2>Sådan sender du krypto til systemet</h2>
-      <p class="desc">Vigtig pointe: du sender ikke penge til <i>appen</i> — den opbevarer ingen midler.
-        Du indbetaler til <b>din egen børskonto</b>, og auto-traderen handler så med saldoen. Sådan
-        beholder du fuld kontrol over pengene.</p>
-      <div class="step"><div class="n">1</div><div>Opret konto på din børs (Coinbase passer fint) og bekræft din identitet.</div></div>
-      <div class="step"><div class="n">2</div><div>Hent din indbetalingsadresse nedenfor (eller på børsen: <b>Funding → Indbetal → vælg coin</b>).</div></div>
-      <div class="step"><div class="n">3</div><div>Send krypto fra din wallet/anden børs til den adresse. <b>Brug det rigtige netværk</b> — ellers kan pengene gå tabt.</div></div>
-      <div class="step"><div class="n">4</div><div>Når det er bekræftet på børsen, handler auto-traderen automatisk med saldoen.</div></div>
-    </div>
-
-    <div class="card">
-      <h2>Hvor er pengene?</h2>
-      <div class="note ok">Cryptoen ligger ikke i Den Danske Metode. Der er ingen lille bank,
-        ingen intern wallet og ingen private keys i appen. Pengene bliver på din Coinbase-konto.
-        Appen læser saldo og sender køb/salg via din API-nøgle. Hvis nøglen kun har read + trade
-        og ikke withdraw/transfer, kan botten handle, men ikke hæve eller sende crypto væk.</div>
-    </div>
-
-    <div class="card">
-      <h2>Hent indbetalingsadresse</h2>
-      <p class="desc">Kræver live-tilstand med en nøgle der har <b>funding/deposit-adgang</b> (stadig
-        IKKE udbetaling). Ellers viser vi vejen til at finde adressen manuelt.</p>
-      <div class="row">
-        <select id="depCur">
-          <option>BTC</option><option>ETH</option><option>USDT</option>
-          <option>USDC</option><option>SOL</option><option>ADA</option>
-        </select>
-        <button class="btn" onclick="getDeposit()">Hent adresse</button>
-      </div>
-      <div id="depResult" style="margin-top:14px"></div>
-    </div>
-  </section>
-
-  <!-- ============ SIMULATOR ============ -->
-  <section class="page" id="page-sim">
-    <div class="card">
-      <h2>Simulator (paper trading)</h2>
-      <p class="desc">Test tilgangen med fiktive penge på rigtige data, og se om AI'en faktisk slår
-        ren gambling (grå kurve) — før rigtige penge. Vælg selv startbeløbet. API-nøgler er ikke
-        nødvendige; hvis kurven er flad, betyder det ofte at motoren ikke fandt en handel med edge.</p>
-      <div class="stats">
-        <div class="stat"><div class="l">Pulje</div><div class="v" id="sEq">–</div></div>
-        <div class="stat"><div class="l">Kontant</div><div class="v" id="sCash">–</div></div>
-        <div class="stat"><div class="l">Afkast</div><div class="v" id="sRoi">–</div></div>
-        <div class="stat"><div class="l">Naiv gambling</div><div class="v" id="sNaive">–</div></div>
-      </div>
-      <div class="row" style="margin-top:16px">
-        <button class="btn" id="simCycleBtn" onclick="cycle()">Kør cyklus</button>
-        <button class="btn ghost" id="simAutoBtn" onclick="toggleAuto()">Auto (10s)</button>
-        <button class="btn ghost" onclick="scanSignals()">Scan signaler</button>
-        <button class="btn ghost" onclick="runBacktest()">Backtest (200 dage)</button>
-        <label class="chk"><input type="checkbox" id="aiToggle" onchange="toggleAi()"> AI-research</label>
-      </div>
-      <div class="row">
-        <label>Startbeløb <input type="number" id="simStart" placeholder="vælg selv" min="0" step="50"> kr</label>
-        <button class="btn ghost" onclick="resetGame()">Nulstil simulator</button>
-      </div>
-      <div class="countdown idle" id="simActivity">Tryk "Kør cyklus" eller start Auto for at se den arbejde.</div>
-      <p class="muted" id="aiStatus" style="font-size:12px"></p>
-    </div>
-
-    <div class="card">
-      <h2>Pulje over tid</h2>
-      <p class="desc">Grøn = AI-tilgangen · grå = naiv gambling · stiplet = startbeløb.</p>
-      <canvas id="chart"></canvas>
-    </div>
-
-    <div class="card" id="btCard" style="display:none">
-      <h2>Backtest — fordeling over mange forløb</h2>
-      <p class="muted" id="btStats"></p>
-      <canvas id="btChart"></canvas>
-      <p class="muted" style="font-size:12px">Grafen er ét repræsentativt forløb (tættest på medianen).
-        Syntetiske data med realistisk handelsfriktion og kun en tynd momentum-edge — tallene er STABILE
-        (samme hver gang), ikke tilfældige. Viser strategiens risikoprofil: bedre end gambling, men taber
-        stadig i en stor del af forløbene. Beviser intet om de rigtige markeder.</p>
-    </div>
-
-    <div class="card">
-      <h2>Seneste cyklus & historik</h2>
-      <div class="log" id="log">Tryk "Kør cyklus".</div>
-      <div class="log" id="diagLog">Tryk "Scan signaler" for at se hvad motoren scanner og hvorfor den siger ja/nej.</div>
-      <table><thead><tr><th>Type</th><th>Navn</th><th>Indsats</th><th>Resultat</th><th>Note</th></tr></thead>
-        <tbody id="history"><tr><td class="muted" colspan="5">Ingen historik endnu</td></tr></tbody>
-      </table>
-    </div>
-  </section>
-
-  <!-- ============ ANBEFALINGER ============ -->
-  <section class="page" id="page-tips">
-    <div class="card">
-      <h2>Indkøbsseddel for rigtige penge</h2>
-      <p class="desc">Indtast din rigtige saldo, så regner motoren ud <i>hvad</i> og <i>hvor meget</i>
-        du skal sætte. Ingen penge flyttes — du udfører selv handlen.</p>
-      <div class="row">
-        <label>Min saldo <input type="number" id="realBalance" placeholder="vælg selv" min="0" step="50"> kr</label>
-        <button class="btn" onclick="getSignals()">Beregn anbefalinger</button>
-      </div>
-      <p class="desc" style="margin-bottom:8px">Scanner <b>alle sportsgrene</b> (fodbold, tennis,
-        basket, e-sport ...) <b>og Polymarket</b> (prediction markets — kun læsning, ingen penge),
-        og rangerer efter bedste value. Tænd AI-research i Settings for at få et uafhængigt bud —
-        ellers vises ingen value (med vilje).</p>
-      <table><thead><tr><th>Kamp / coin</th><th>Sport</th><th>Vind%</th><th>Odds</th><th>Value</th><th>Indsats</th></tr></thead>
-        <tbody id="signals"><tr><td class="muted" colspan="6">Tryk "Beregn anbefalinger"</td></tr></tbody>
-      </table>
-    </div>
-    <div class="card">
-      <h2>Om sport & ansvarligt spil</h2>
-      <div class="note warn">Bettingsider (fx Betano) har intet lovligt API, og bots er forbudt i deres
-        vilkår — bliver det opdaget lukkes kontoen og gevinster annulleres. Derfor er sport kun
-        anbefalinger du selv godkender hos en licenseret udbyder. Brug <b>ROFUS</b> (rofus.nu) hvis spil
-        bliver et problem. Husk: gambling har negativ forventning — du kan tabe det hele.</div>
-    </div>
-  </section>
-
-  <!-- ============ SETTINGS ============ -->
-  <section class="page" id="page-settings">
-    <div class="card">
-      <h2>API-nøgler & AI</h2>
-      <p class="desc">Nøgler gemmes kun lokalt på denne maskine i <code>data/settings.json</code>.
-        Feltet tømmes efter gemning, og status vises maskeret. AI kan bruges som scout til sport
-        og value-bets, men den er begrænset af dagsbudgettet nedenfor.</p>
-      <div class="note warn" style="margin-bottom:16px">For at undgå en uventet AI-regning er
-        AI-research slukket som standard og stopper automatisk når max kald eller tokenbudget er
-        brugt. Krypto auto-trader bruger ikke AI-tokens. OpenAI og Gemini kan gemmes her til senere
-        udvidelser, men den nuværende motor bruger dem ikke endnu.</div>
-      <div class="formgrid">
-        <label>Claude / Anthropic</label>
-        <div>
-          <input id="setAnthropic" type="password" placeholder="ANTHROPIC_API_KEY">
-          <div class="key-status" id="statusAnthropic">–</div>
-        </div>
-        <label>Claude model</label>
-        <select id="setAnthropicModel">
-          <option value="claude-haiku-4-5">claude-haiku-4-5</option>
-          <option value="claude-sonnet-4-5">claude-sonnet-4-5</option>
-          <option value="claude-opus-4-8">claude-opus-4-8</option>
-        </select>
-        <label>AI sport-scout</label>
-        <label class="chk"><input type="checkbox" id="setAiResearchEnabled"> Tillad betalte Claude-kald</label>
-        <label>Web-søgning</label>
-        <label class="chk"><input type="checkbox" id="setAiWebSearchEnabled"> Tillad web-søgning (dyrere)</label>
-        <label>OpenAI</label>
-        <div>
-          <input id="setOpenai" type="password" placeholder="OPENAI_API_KEY">
-          <div class="key-status" id="statusOpenai">–</div>
-        </div>
-        <label>Gemini</label>
-        <div>
-          <input id="setGemini" type="password" placeholder="GEMINI_API_KEY">
-          <div class="key-status" id="statusGemini">–</div>
-        </div>
-        <label>The Odds API</label>
-        <div>
-          <input id="setOdds" type="password" placeholder="ODDS_API_KEY">
-          <div class="key-status" id="statusOdds">–</div>
-        </div>
-        <label>Telegram bot-token</label>
-        <div>
-          <input id="setTelegram" type="password" placeholder="fra @BotFather (se MOBIL_BESKED_GUIDE.txt)">
-          <div class="key-status" id="statusTelegram">–</div>
-        </div>
-        <label>Telegram chat-id</label>
-        <input id="setTelegramChat" type="text" placeholder="dit chat-id (tal)">
-        <label>Mobil-beskeder</label>
-        <label class="chk"><input type="checkbox" id="setNotifyEnabled"> Send beskeder til min mobil</label>
-        <label>Handels-beskeder</label>
-        <label class="chk"><input type="checkbox" id="setNotifyTrades"> Straks-besked ved køb/salg/risikobremse</label>
-        <label>Daglig status kl.</label>
-        <input id="setNotifyHour" type="number" min="0" max="23" step="1" value="19">
-        <label>Polymarket-scanner</label>
-        <label class="chk"><input type="checkbox" id="setPolymarketEnabled"> Vis Polymarket i Anbefalinger (kun læsning)</label>
-      </div>
-      <div class="row" style="margin-top:12px">
-        <button class="btn ghost" onclick="testNotify()">📱 Send testbesked til mobilen</button>
-        <span class="muted" id="notifyTestResult"></span>
-      </div>
-
-      <details class="adv" style="margin-top:14px">
-        <summary>Budget & risikogrænser (avanceret)</summary>
-        <div class="adv-body">
-          <p class="desc" style="margin-top:10px">Standardværdierne er sikre — rør dem kun hvis du ved hvad du laver.</p>
-          <div class="formgrid">
-            <label>Max AI-kald/dag</label>
-            <input id="setAiDailyCallLimit" type="number" min="0" step="1" value="3">
-            <label>Tokenbudget/dag</label>
-            <input id="setAiDailyTokenBudget" type="number" min="0" step="500" value="12000">
-            <label>Max output/kald</label>
-            <input id="setAiMaxTokens" type="number" min="100" step="100" value="800">
-            <label>Max live-handel</label>
-            <input id="setMaxLiveStake" type="number" min="0" step="5" value="25">
-            <label>Max køb/dag</label>
-            <input id="setMaxDailyBuys" type="number" min="0" step="1" value="2">
-            <label>Max åbne positioner</label>
-            <input id="setMaxOpenPositions" type="number" min="0" step="1" value="2">
-            <label>Canary mode</label>
-            <label class="chk"><input type="checkbox" id="setCanaryMode"> Første live-køb er ekstra lille</label>
-            <label>Canary beløb</label>
-            <input id="setCanaryStake" type="number" min="0" step="5" value="10">
+      </header>
+      <main>
+        <div class="page-heading">
+          <div>
+            <div class="eyebrow">DEN DANSKE METODE</div>
+            <h1 id="page-title">Overblik</h1>
+          </div>
+          <div class="heading-actions">
+            <div
+              class="segmented"
+              id="modes"
+              role="group"
+              aria-label="Datatilstand"
+            >
+              <button data-mode="DEMO" class="selected">DEMO</button
+              ><button data-mode="PAPER">PAPER</button
+              ><button data-mode="REAL">REAL</button>
+            </div>
+            <button id="scan" class="primary">
+              <i data-lucide="refresh-cw"></i><span>Scan markedet</span></button
+            ><button
+              id="halt"
+              class="icon-button danger"
+              title="Stop nye sportsregistreringer"
+              aria-label="Globalt sportsstop"
+            >
+              <i data-lucide="octagon-pause"></i>
+            </button>
           </div>
         </div>
-      </details>
-      <div class="row" style="margin-top:16px">
-        <button class="btn" onclick="saveSettings()">Gem settings</button>
-        <button class="btn ghost" onclick="loadSettings()">Genindlæs status</button>
-      </div>
-      <div class="log" id="settingsLog">Indlæser settings...</div>
-      <div class="log" id="aiUsageLog">AI-forbrug: indlæser...</div>
+        <div class="mode-banner" id="mode-banner">
+          <span class="tag amber">DEMO</span
+          ><span
+            >Illustrative priser. Alle beløb og resultater tilhører
+            demo-kontoen.</span
+          ><span class="banner-end">INGEN DOKUMENTERET EDGE</span>
+        </div>
+        <div id="error-banner" class="error-banner" role="alert" hidden></div>
+        <div id="view" aria-live="polite">
+          <div class="loading-state">
+            <i data-lucide="loader-circle" class="spin"></i>Henter journal
+          </div>
+        </div>
+        <footer>
+          <span>DDM / Kvantitativ markedsanalyse</span
+          ><span id="last-update">Afventer første scan</span>
+        </footer>
+      </main>
     </div>
-  </section>
-</main>
-
-<script>
-const kr = n => (n>=0?'':'-') + Math.abs(n).toFixed(2);
-const fmtTime = ts => ts ? new Date(ts*1000).toLocaleTimeString('da-DK') : '–';
-let currentSimStarting = 100;
-let currentLiveEquity = 0;
-// fælles "kører"-tilstand til animationerne
-let schedCache = { running:false, online:true, interval:60, next_run:null, last_run:null,
-                   run_sim:false, run_live:true };
-let busy = 0;
-function setBusy(d){ busy = Math.max(0, busy + d); tick(); }
-const fmtDuration = seconds => {
-  seconds = Math.max(0, Math.floor(seconds || 0));
-  const h = Math.floor(seconds / 3600), m = Math.floor((seconds % 3600) / 60), s = seconds % 60;
-  return h ? `${h}t ${m}m` : m ? `${m}m ${s}s` : `${s}s`;
-};
-
-// ---------- tabs ----------
-document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
-  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
-  t.classList.add('active');
-  document.getElementById('page-'+t.dataset.tab).classList.add('active');
-});
-
-// ---------- simulator ----------
-async function refresh() {
-  const s = await (await fetch('/api/state')).json();
-  currentSimStarting = s.starting || 100;
-  document.getElementById('sEq').textContent = kr(s.equity)+' kr';
-  document.getElementById('sCash').textContent = kr(s.cash)+' kr';
-  document.getElementById('sNaive').textContent = kr(s.naive)+' kr';
-  const roi = ((s.equity - s.starting)/s.starting)*100;
-  const r = document.getElementById('sRoi');
-  r.textContent = (roi>=0?'+':'')+roi.toFixed(1)+'%'; r.className = 'v '+(roi>=0?'up':'down');
-  const hist = document.getElementById('history');
-  hist.innerHTML = s.history.length ? s.history.map(h =>
-    `<tr><td>${h.type}</td><td>${h.name}</td><td>${kr(h.stake)} kr</td>
-     <td class="${h.pnl>=0?'up':'down'}">${kr(h.pnl)} kr</td><td class="muted">${h.reason}</td></tr>`).join('')
-    : '<tr><td class="muted" colspan="5">Ingen historik endnu</td></tr>';
-  document.getElementById('aiToggle').checked = !!s.use_ai;
-  drawChartOn('chart', s.equity_curve, s.naive_curve, s.starting);
-}
-let simAuto=null;
-async function cycle() {
-  setBusy(1);
-  try {
-    const r = await (await fetch('/api/cycle',{method:'POST'})).json();
-    document.getElementById('log').textContent = r.log.join('\n'); await refresh();
-  } finally { setBusy(-1); }
-}
-async function scanSignals(){
-  const d=await (await fetch('/api/diagnostics')).json();
-  const lines=[...d.summary, '', 'Krypto:'];
-  (d.market.items||[]).forEach(i=>lines.push(`${i.accepted?'OK':'NEJ'} ${i.name}: ${i.reason}`));
-  lines.push('', `Sport (${d.sports.source}):`);
-  (d.sports.items||[]).forEach(i=>lines.push(`${i.accepted?'OK':'NEJ'} ${i.name}: ${i.reason}`));
-  lines.push('', d.sports.note);
-  if(d.use_ai) lines.push('Bemærk: AI-research er slået til, men denne signal-scan bruger ikke AI-tokens.');
-  document.getElementById('diagLog').textContent=lines.join('\n');
-}
-function toggleAuto(){ const b=document.getElementById('simAutoBtn');
-  if(simAuto){clearInterval(simAuto);simAuto=null;b.textContent='Auto (10s)';}
-  else{simAuto=setInterval(cycle,10000);b.textContent='Stop';cycle();} }
-async function resetGame(){
-  const starting=parseFloat(document.getElementById('simStart').value)||currentSimStarting||100;
-  await fetch('/api/reset',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({starting})});
-  document.getElementById('log').textContent='Nulstillet til '+starting+' kr.'; refresh();
-}
-async function toggleAi(){
-  const on=document.getElementById('aiToggle').checked;
-  const r=await (await fetch('/api/ai',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({use_ai:on})})).json();
-  const st=document.getElementById('aiStatus');
-  st.textContent = on && !r.ai_available ? 'AI-research kræver ANTHROPIC_API_KEY i miljøet (koster penge pr. kald).'
-    : on ? 'AI-research aktiv: Claude web-researcher hver kamp.' : '';
-}
-
-// ---------- settings ----------
-function providerById(settings, id){ return (settings.providers||[]).find(p=>p.id===id) || {}; }
-function renderKeyStatus(el, p){
-  const active = p.active ? 'bruges nu' : 'gemt til senere';
-  const configured = p.configured ? `${p.masked} · ${p.source} · ${active}` : `ikke sat · ${active}`;
-  const pkg = p.package_ok ? '' : ' · SDK mangler';
-  el.textContent = configured + pkg;
-}
-async function loadSettings(){
-  const s=await (await fetch('/api/settings')).json();
-  document.getElementById('setAnthropicModel').value=s.anthropic_model || 'claude-haiku-4-5';
-  document.getElementById('setAiResearchEnabled').checked=!!s.ai_research_enabled;
-  document.getElementById('setAiWebSearchEnabled').checked=!!s.ai_web_search_enabled;
-  document.getElementById('setAiDailyCallLimit').value=s.ai_daily_call_limit ?? 3;
-  document.getElementById('setAiDailyTokenBudget').value=s.ai_daily_token_budget ?? 12000;
-  document.getElementById('setAiMaxTokens').value=s.ai_max_tokens_per_call ?? 800;
-  document.getElementById('setMaxLiveStake').value=s.max_live_stake ?? 25;
-  document.getElementById('setMaxDailyBuys').value=s.max_daily_buys ?? 2;
-  document.getElementById('setMaxOpenPositions').value=s.max_open_positions ?? 2;
-  document.getElementById('setCanaryMode').checked=!!s.canary_mode;
-  document.getElementById('setCanaryStake').value=s.canary_stake ?? 10;
-  document.getElementById('setTelegramChat').value=s.telegram_chat_id || '';
-  document.getElementById('setNotifyEnabled').checked=!!s.notify_enabled;
-  document.getElementById('setNotifyTrades').checked=!!s.notify_trades;
-  document.getElementById('setNotifyHour').value=s.notify_daily_hour ?? 19;
-  document.getElementById('setPolymarketEnabled').checked=!!s.polymarket_enabled;
-  renderKeyStatus(document.getElementById('statusTelegram'), providerById(s,'telegram_bot_token'));
-  renderKeyStatus(document.getElementById('statusAnthropic'), providerById(s,'anthropic_api_key'));
-  renderKeyStatus(document.getElementById('statusOpenai'), providerById(s,'openai_api_key'));
-  renderKeyStatus(document.getElementById('statusGemini'), providerById(s,'gemini_api_key'));
-  renderKeyStatus(document.getElementById('statusOdds'), providerById(s,'odds_api_key'));
-  document.getElementById('settingsLog').textContent=s.note;
-  if(s.ai_usage){
-    document.getElementById('aiUsageLog').textContent =
-      `AI-forbrug i dag (${s.ai_usage.day}): ${s.ai_usage.calls}/${s.ai_usage.call_limit} kald · `
-      + `${s.ai_usage.tokens}/${s.ai_usage.token_budget} tokens · cache ${s.ai_usage.cache_entries} · `
-      + `AI ${s.ai_usage.enabled ? 'tilladt' : 'slået fra'} · web ${s.ai_usage.web_search_enabled ? 'tilladt' : 'slået fra'}`;
-  }
-}
-async function testNotify(){
-  const el=document.getElementById('notifyTestResult');
-  el.textContent='Sender…';
-  try{
-    const r=await (await fetch('/api/notify/test',{method:'POST'})).json();
-    el.textContent=(r.ok?'✅ ':'⚠️ ')+r.message;
-  }catch(e){ el.textContent='⚠️ Kunne ikke nå serveren.'; }
-}
-
-async function saveSettings(){
-  const payload={
-    anthropic_api_key:document.getElementById('setAnthropic').value,
-    openai_api_key:document.getElementById('setOpenai').value,
-    gemini_api_key:document.getElementById('setGemini').value,
-    odds_api_key:document.getElementById('setOdds').value,
-    anthropic_model:document.getElementById('setAnthropicModel').value,
-    ai_research_enabled:document.getElementById('setAiResearchEnabled').checked,
-    ai_web_search_enabled:document.getElementById('setAiWebSearchEnabled').checked,
-    ai_daily_call_limit:parseInt(document.getElementById('setAiDailyCallLimit').value)||0,
-    ai_daily_token_budget:parseInt(document.getElementById('setAiDailyTokenBudget').value)||0,
-    ai_max_tokens_per_call:parseInt(document.getElementById('setAiMaxTokens').value)||800,
-    max_live_stake:parseFloat(document.getElementById('setMaxLiveStake').value)||0,
-    max_daily_buys:parseInt(document.getElementById('setMaxDailyBuys').value)||0,
-    max_open_positions:parseInt(document.getElementById('setMaxOpenPositions').value)||0,
-    canary_mode:document.getElementById('setCanaryMode').checked,
-    canary_stake:parseFloat(document.getElementById('setCanaryStake').value)||0,
-    telegram_bot_token:document.getElementById('setTelegram').value,
-    telegram_chat_id:document.getElementById('setTelegramChat').value,
-    notify_enabled:document.getElementById('setNotifyEnabled').checked,
-    notify_trades:document.getElementById('setNotifyTrades').checked,
-    notify_daily_hour:parseInt(document.getElementById('setNotifyHour').value)||19,
-    polymarket_enabled:document.getElementById('setPolymarketEnabled').checked
-  };
-  const s=await (await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify(payload)})).json();
-  ['setAnthropic','setOpenai','setGemini','setOdds','setTelegram'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('settingsLog').textContent='Settings gemt lokalt. Nye nøgler er aktive i denne serverproces.';
-  await loadSettings();
-}
-async function runBacktest(){
-  const starting=parseFloat(document.getElementById('simStart').value)||currentSimStarting||100;
-  document.getElementById('btCard').style.display='block';
-  document.getElementById('btStats').innerHTML='<span class="spinner"></span> Kører 200 simulationer…';
-  const r=await (await fetch('/api/backtest',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({days:200, runs:200, starting})})).json();
-  const c=v=>v>=0?'up':'down', sgn=v=>(v>=0?'+':'')+v;
-  document.getElementById('btStats').innerHTML =
-    `<b>${r.runs} simulationer à ${r.days} dage</b> (samme resultat hver gang):<br>`
-    +`Strategi: median <span class="${c(r.ai_median_pct)}">${sgn(r.ai_median_pct)}%</span> · `
-    +`i plus <b>${r.ai_win_rate}%</b> af gangene · spænd <span class="down">${sgn(r.ai_worst_pct)}%</span> til <span class="up">${sgn(r.ai_best_pct)}%</span><br>`
-    +`Naiv gambling: median <span class="${c(r.naive_median_pct)}">${sgn(r.naive_median_pct)}%</span> · i plus kun ${r.naive_win_rate}% af gangene`;
-  drawChartOn('btChart', r.ai_curve.map(v=>({equity:v})), r.naive_curve.map(v=>({equity:v})), r.starting);
-}
-
-// ---------- auto-trader ----------
-let liveAuto=null;
-async function refreshLive(){
-  const s=await (await fetch('/api/live/status')).json();
-  const live=s.live;
-  document.getElementById('tMode').textContent = live?'LIVE':'TØR-KØRSEL';
-  document.getElementById('tMode').className = 'v '+(live?'down':'up');
-  document.getElementById('tEx').textContent = s.exchange+' ('+s.quote+')';
-  document.getElementById('tCash').textContent = s.cash.toFixed(2)+' '+s.quote;
-  document.getElementById('tEq').textContent = s.equity.toFixed(2)+' '+s.quote;
-  currentLiveEquity = s.equity || 0;
-  if(s.strategy){
-    document.getElementById('tStrategy').textContent = `SMA ${s.strategy.trend_len}d`;
-    document.getElementById('tStrategy').title =
-      `Stop ${s.strategy.stop_loss_pct}%, trailing ${s.strategy.trail_pct}% efter +${s.strategy.arm_profit_pct}%, gebyr ${s.strategy.fee_pct}%`;
-  }
-  if(s.risk){
-    const tr=document.getElementById('tRisk');
-    tr.textContent = s.risk.halted ? 'STOPPET' : `${s.risk.daily_return_pct.toFixed(1)}% i dag`;
-    tr.className = 'v ' + (s.risk.halted ? 'down' : 'up');
-    tr.title = `Dagligt loft ${s.risk.daily_loss_limit_pct}%, samlet loft ${s.risk.total_loss_limit_pct}%`;
-  }
-  document.getElementById('liveQuote').textContent = s.quote;
-  const hb=document.getElementById('hBadge');
-  hb.textContent = live?'LIVE — RIGTIGE PENGE':'TØR-KØRSEL'; hb.className='badge '+(live?'live':'sim');
-  document.getElementById('hEquityLabel').textContent = live ? 'Coinbase saldo' : 'Demo-pulje';
-  document.getElementById('hEquity').textContent = s.equity.toFixed(2)+' '+s.quote;
-  const tb=document.getElementById('livePositions');
-  tb.innerHTML = s.positions.length ? s.positions.map(p =>
-    `<tr><td>${p.symbol}</td><td>${p.amount.toFixed(5)}</td><td>${p.entry.toFixed(4)}</td>
-     <td>${p.peak.toFixed(4)}</td><td>${p.now.toFixed(4)}</td><td>${p.cost.toFixed(2)} ${s.quote}</td></tr>`).join('')
-    : '<tr><td class="muted" colspan="6">Ingen åbne positioner</td></tr>';
-}
-async function liveCycle(){
-  setBusy(1);
-  try {
-    const r=await (await fetch('/api/live/cycle',{method:'POST'})).json();
-    document.getElementById('liveLog').textContent=(r.live?'[LIVE] ':'[TØR-KØRSEL] ')+r.log.join('\n'); await refreshLive();
-  } finally { setBusy(-1); }
-}
-function toggleLiveAuto(){ const b=document.getElementById('liveAutoBtn');
-  if(liveAuto){clearInterval(liveAuto);liveAuto=null;b.textContent='Auto (30s)';}
-  else{liveAuto=setInterval(liveCycle,30000);b.textContent='Stop';liveCycle();} }
-async function liveFlatten(){ if(!confirm('Sælg ALLE positioner nu?'))return;
-  const r=await (await fetch('/api/live/flatten',{method:'POST'})).json();
-  document.getElementById('liveLog').textContent=r.log.join('\n'); refreshLive(); }
-async function liveReset(){
-  const starting=parseFloat(document.getElementById('liveStart').value)||currentLiveEquity||100;
-  await fetch('/api/live/reset',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({starting})});
-  document.getElementById('liveLog').textContent='Tør-kørsel nulstillet til '+starting+'.'; refreshLive();
-}
-async function runPreflight(){
-  const r=await (await fetch('/api/live/preflight')).json();
-  const lines = [
-    r.ok ? 'KLAR TIL LIVE-HANDEL' : 'IKKE KLAR TIL LIVE-HANDEL',
-    `Børs: ${r.exchange} · quote: ${r.quote}`,
-    `Live ønsket: ${r.live_requested ? 'ja' : 'nej'} · armet: ${r.live_armed ? 'ja' : 'nej'}`,
-    ...r.checks.map(c => `${c.ok ? 'OK' : 'FEJL'} - ${c.name}: ${c.message}`)
-  ];
-  document.getElementById('preflightLog').textContent=lines.join('\n');
-}
-async function runReadiness(){
-  const r=await (await fetch('/api/live/readiness')).json();
-  const lines=[r.ok ? 'KLAR TIL LILLE LIVE-TEST' : 'IKKE KLAR TIL LIVE-TEST', r.recommendation, ''];
-  (r.checks||[]).forEach(c=>lines.push(`${c.ok?'OK':'FEJL'} - ${c.name}: ${c.message}`));
-  document.getElementById('preflightLog').textContent=lines.join('\n');
-}
-async function clearHalt(){
-  const r=await (await fetch('/api/live/clear-halt',{method:'POST'})).json();
-  document.getElementById('preflightLog').textContent=`Risikobremse nulstillet ved equity ${r.equity}.`;
-  refreshLive();
-}
-
-// ---------- deposit ----------
-async function getDeposit(){
-  const currency=document.getElementById('depCur').value;
-  const box=document.getElementById('depResult'); box.innerHTML='<span class="muted">Henter…</span>';
-  const r=await (await fetch('/api/deposit',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({currency})})).json();
-  if(!r.live){ box.innerHTML=`<div class="note info">${r.message}</div>`; return; }
-  if(r.error){ box.innerHTML=`<div class="note warn">Kunne ikke hente adresse: ${r.error}.<br>
-    Find den i stedet på ${r.exchange} under <b>Funding → Indbetal → ${currency}</b>.</div>`; return; }
-  box.innerHTML = `<div class="note ok">Indbetalingsadresse for <b>${r.currency}</b> på ${r.exchange}
-    ${r.network?'· netværk: <b>'+r.network+'</b>':''}</div>
-    <div class="addr" id="addrText">${r.address||'(ingen adresse returneret)'}</div>
-    ${r.tag?'<div class="note warn" style="margin-top:8px">Husk tag/memo: <b>'+r.tag+'</b></div>':''}
-    <div class="row" style="margin-top:8px"><button class="btn ghost" onclick="copyAddr()">Kopiér adresse</button></div>`;
-}
-function copyAddr(){ const t=document.getElementById('addrText').textContent;
-  navigator.clipboard.writeText(t).then(()=>alert('Adresse kopieret')); }
-
-// ---------- anbefalinger ----------
-async function getSignals(){
-  const balance=parseFloat(document.getElementById('realBalance').value)||0;
-  if(balance<=0){
-    document.getElementById('signals').innerHTML='<tr><td class="muted" colspan="6">Indtast en saldo først.</td></tr>';
-    return;
-  }
-  const tb=document.getElementById('signals');
-  tb.innerHTML='<tr><td class="muted" colspan="6">Scanner alle sportsgrene...</td></tr>';
-  const r=await (await fetch('/api/signals',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({balance})})).json();
-  const dash = v => (v===null||v===undefined) ? '–' : v;
-  tb.innerHTML = r.actions.length ? r.actions.map(a =>
-    `<tr><td>${a.name}</td><td class="muted">${a.sport||a.type}</td>
-     <td>${a.win_pct!==null&&a.win_pct!==undefined?a.win_pct+'%':'–'}</td>
-     <td>${dash(a.odds)}</td>
-     <td class="${(a.value_pct||0)>=0?'up':'down'}">${a.value_pct!==null&&a.value_pct!==undefined?(a.value_pct>=0?'+':'')+a.value_pct+'%':'–'}</td>
-     <td><b>${a.stake.toFixed(2)} kr</b></td></tr>`).join('')
-    : '<tr><td class="muted" colspan="6">Ingen value lige nu. Tænd AI-research i Settings — uden den finder den ingen edge (med vilje).</td></tr>';
-}
-
-// ---------- scheduler ----------
-async function refreshHealth(){
-  const hb=document.getElementById('heartbeatText');
-  try{
-    const h=await (await fetch('/api/health')).json();
-    schedCache.online=true;
-    schedCache.running=!!(h.scheduler&&h.scheduler.running);
-    hb.textContent=`Server heartbeat: ${new Date(h.server_time*1000).toLocaleTimeString('da-DK')} · uptime ${fmtDuration(h.uptime_seconds)}`;
-  }catch(e){
-    schedCache.online=false;
-    hb.textContent='Server heartbeat: ingen kontakt til appen';
-  }
-  tick();
-}
-
-// Deaktiver "Kør cyklus" mens noget kører, og vis aktivitet på simulator-fanen.
-function updateControls(){
-  const simBusy  = busy>0 || simAuto!==null  || (schedCache.running && schedCache.run_sim);
-  const liveBusy = busy>0 || liveAuto!==null || (schedCache.running && schedCache.run_live);
-  const sb=document.getElementById('simCycleBtn');  if(sb) sb.disabled = simBusy;
-  const lb=document.getElementById('liveCycleBtn'); if(lb) lb.disabled = liveBusy;
-  const sa=document.getElementById('simActivity');
-  if(sa){
-    const secs=schedCache.next_run?Math.max(0,Math.round(schedCache.next_run-Date.now()/1000)):null;
-    if(busy>0){ sa.className='countdown'; sa.innerHTML='<span class="spinner"></span> Kører cyklus nu…'; }
-    else if(simAuto!==null){ sa.className='countdown'; sa.innerHTML='<span class="dots">Auto kører · scanner hvert 10. sekund</span>'; }
-    else if(schedCache.running && schedCache.run_sim){
-      sa.className='countdown';
-      sa.textContent = (secs===null||secs<=0) ? '⚙️ Scanner markedet…' : ('⏳ Næste scan om '+secs+'s');
-    } else { sa.className='countdown idle'; sa.textContent='Tryk "Kør cyklus" eller start Auto for at se den arbejde.'; }
-  }
-}
-
-// Tikker hvert sekund: viser tydeligt at programmet lever (nedtælling, sweep, spinner).
-function tick(){
-  updateControls();
-  const pill=document.getElementById('runPill'), text=document.getElementById('runText');
-  const bar=document.getElementById('actBar'), cd=document.getElementById('schedCountdown');
-  if(!pill) return;
-  // 1) ingen kontakt til serveren
-  if(!schedCache.online){
-    pill.className='runpill bad'; text.textContent='Ingen kontakt';
-    bar.classList.remove('on'); cd.className='countdown idle';
-    cd.textContent='Ingen kontakt til serveren — er den startet?';
-    return;
-  }
-  // 2) en cyklus kører lige nu (manuelt eller auto)
-  if(busy>0){
-    pill.className='runpill ok'; text.innerHTML='<span class="spinner"></span> Arbejder';
-    bar.classList.add('on'); cd.className='countdown';
-    cd.innerHTML='<span class="spinner"></span> Scanner markedet nu…';
-    return;
-  }
-  // 3) autonom drift kører — vis levende nedtælling til næste scan
-  if(schedCache.running){
-    pill.className='runpill ok';
-    const now=Date.now()/1000;
-    let secs=schedCache.next_run?Math.round(schedCache.next_run-now):null;
-    bar.classList.add('on'); cd.className='countdown';
-    if(secs===null||secs<=0){
-      text.innerHTML='<span class="dots">Scanner</span>';
-      cd.innerHTML='<span class="spinner"></span> Scanner markedet…';
-    } else {
-      text.textContent='Kører · næste om '+secs+'s';
-      cd.textContent='⏳ Næste scan om '+secs+' sekunder';
-    }
-    return;
-  }
-  // 4) server aktiv, men ikke autonom
-  pill.className='runpill warn'; text.textContent='Klar (ikke autonom)';
-  bar.classList.remove('on'); cd.className='countdown idle';
-  cd.textContent='Tryk "Start autonom" for at lade den køre selv.';
-}
-async function refreshSched(){
-  const s=await (await fetch('/api/scheduler/status')).json();
-  schedCache.running=s.running; schedCache.interval=s.interval;
-  schedCache.next_run=s.next_run; schedCache.last_run=s.last_run;
-  schedCache.run_sim=s.run_sim; schedCache.run_live=s.run_live;
-  tick();
-  const el=document.getElementById('schedState');
-  el.textContent=s.running?'KØRER':'stoppet'; el.style.color=s.running?'var(--green)':'var(--muted)';
-  document.getElementById('schedTiming').textContent = s.running
-    ? ` · interval ${s.interval}s · sidst ${fmtTime(s.last_run)} · næste ${fmtTime(s.next_run)}` : '';
-  document.getElementById('schedInterval').value=s.interval;
-  document.getElementById('schedLive').checked=s.run_live;
-  document.getElementById('schedSim').checked=s.run_sim;
-  if(s.last_log&&s.last_log.length) document.getElementById('schedLog').textContent=s.last_log.join('\n');
-  if(s.error) document.getElementById('schedLog').textContent=s.error;
-  if(s.running){ refreshLive(); refresh(); }
-}
-async function schedStart(){
-  await fetch('/api/scheduler/start',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({interval:parseInt(document.getElementById('schedInterval').value)||60,
-      run_live:document.getElementById('schedLive').checked,
-      run_sim:document.getElementById('schedSim').checked})});
-  refreshSched();
-}
-async function schedStop(){ await fetch('/api/scheduler/stop',{method:'POST'}); refreshSched(); }
-
-// ---------- chart ----------
-function drawChartOn(id, eq, naive, start){
-  const c=document.getElementById(id); if(!c) return; const ctx=c.getContext('2d');
-  const W=c.width=c.clientWidth, H=c.height=240, pad=30; ctx.clearRect(0,0,W,H);
-  const all=eq.map(p=>p.equity).concat(naive.map(p=>p.equity)).concat([start]);
-  if(!all.length) return;
-  let min=Math.min(...all),max=Math.max(...all); if(min===max){min-=1;max+=1;}
-  const n=Math.max(eq.length,naive.length,2);
-  const X=i=>pad+(W-2*pad)*(i/(n-1||1)), Y=v=>H-pad-(H-2*pad)*((v-min)/(max-min));
-  ctx.strokeStyle='#30363d'; ctx.setLineDash([4,4]); ctx.beginPath();
-  ctx.moveTo(pad,Y(start)); ctx.lineTo(W-pad,Y(start)); ctx.stroke(); ctx.setLineDash([]);
-  const line=(d,col)=>{ if(d.length<2)return; ctx.strokeStyle=col; ctx.lineWidth=2; ctx.beginPath();
-    d.forEach((p,i)=>{const x=X(i),y=Y(p.equity); i?ctx.lineTo(x,y):ctx.moveTo(x,y);}); ctx.stroke(); };
-  line(naive,'#6e7681'); line(eq,'#3fb950');
-}
-
-refresh(); refreshLive(); refreshSched();
-refreshHealth();
-loadSettings();
-setInterval(refreshSched, 10000);
-setInterval(refreshHealth, 5000);
-setInterval(tick, 1000);   // levende nedtælling/animation hvert sekund
-tick();
-</script>
-</body>
+    <dialog id="detail">
+      <div class="dialog-heading">
+        <div>
+          <div class="eyebrow">BESLUTNINGSJOURNAL</div>
+          <h2 id="detail-title">Analyse</h2>
+        </div>
+        <button
+          class="icon-button"
+          data-close="detail"
+          title="Luk analyse"
+          aria-label="Luk analyse"
+        >
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div id="detail-body"></div>
+    </dialog>
+    <dialog id="fund">
+      <form id="fund-form">
+        <div class="dialog-heading">
+          <h2 id="fund-title">Tilføj pulje</h2>
+          <button
+            type="button"
+            class="icon-button"
+            data-close="fund"
+            aria-label="Luk"
+          >
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <label for="fund-amount">Beløb i EUR</label
+        ><input
+          id="fund-amount"
+          type="number"
+          min="0.01"
+          max="10000000"
+          step="0.01"
+          required
+          placeholder="Valgfrit beløb"
+        />
+        <p id="fund-note" class="muted"></p>
+        <button type="submit" class="primary">
+          <i data-lucide="plus"></i>Registrer beløb
+        </button>
+      </form>
+    </dialog>
+    <dialog id="navigation-menu">
+      <div class="dialog-heading">
+        <h2>Alle visninger</h2>
+        <button
+          class="icon-button"
+          data-close="navigation-menu"
+          aria-label="Luk menu"
+        >
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div id="mobile-navigation"></div>
+    </dialog>
+    <div id="toast" role="status" hidden></div>
+  </body>
 </html>

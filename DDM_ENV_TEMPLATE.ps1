@@ -25,7 +25,7 @@ $env:DDM_DAILY_LOSS_LIMIT = "-0.05"
 $env:DDM_TOTAL_LOSS_LIMIT = "-0.10"
 $env:DDM_AUTO_FLATTEN_ON_HALT = "1"
 
-# Valgfri AI-research til sport. Ikke noedvendig for krypto-botten.
+# Valgfri manuel Claude-forklaring. AI bestemmer ikke sandsynligheder eller handler.
 # $env:ANTHROPIC_API_KEY = "DIN_CLAUDE_API_KEY"
 # $env:SMARTSTAKE_MODEL = "claude-haiku-4-5"
 
@@ -33,9 +33,9 @@ $env:DDM_AUTO_FLATTEN_ON_HALT = "1"
 # Standard i appen er: AI-research slaaet fra, web-soegning slaaet fra,
 # max 3 AI-kald/dag og 12000 tokens/dag hvis du aktivt slaar det til.
 
-# Valgfri live-odds til sports-anbefalinger. Ikke noedvendig for krypto-botten.
+# Valgfri odds-feed til PAPER/REAL-analyse. Placering paa bettingsider er manuel.
 # $env:ODDS_API_KEY = "DIN_THE_ODDS_API_KEY"
 
 # Valgfri mobil-beskeder via Telegram (nemmest at saette i Settings-fanen).
-# Se MOBIL_BESKED_GUIDE.txt for 5-minutters opsaetning.
+# Saet token og chat-id i Settings.
 # $env:DDM_TELEGRAM_TOKEN = "DIN_TELEGRAM_BOT_TOKEN"

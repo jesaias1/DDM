@@ -1,165 +1,91 @@
 # Den Danske Metode
 
-En lokal AI-/kvant-beslutningsmotor til højrisiko krypto og paper-trading. Appen har login, dansk dashboard, simulator, baggrundskørsel, Coinbase/ccxt-børsforbindelse og en kill switch.
+Lokal sportsintelligens med oddsjournal, deterministisk sandsynlighed/EV, konservativ risiko og en separat kryptoterminal. **Der er endnu ingen dokumenteret betting-edge.** PAPER er standard for afproevning; REAL-sport sender ingen bookmaker-ordrer.
 
-Det vigtigste først: dette er ikke en pengemaskine. Momentum i krypto har perioder hvor det virker, og lange perioder hvor gebyrer, støj og faldende markeder æder kanten. Du kan tabe hele beløbet. Brug tør-kørsel og backtest før du sætter rigtige penge på.
+## Start paa Windows
 
-## Kom i gang
-
-```powershell
-pip install -r requirements.txt
-python app.py
-```
-
-Åbn http://localhost:5000 og log ind.
-
-Standard-login:
-
-```text
-jesaias / miebs112
-```
-
-Du kan ændre login med:
+Python 3.10 eller nyere og internet til installationen:
 
 ```powershell
-$env:DDM_USER = "nyt-brugernavn"
-$env:DDM_PASS = "ny-adgangskode"
+.\INSTALL_DDM.ps1
+.\START_DDM.ps1
 ```
 
-## Hvad er forbedret
+Aabn http://127.0.0.1:5000. Standardlogin: jesaias / miebs112. Saet DDM_USER/DDM_PASS i .env.local.ps1 for at aendre det. Kun localhost/127.0.0.1 accepteres. Porten kan aendres med DDM_PORT. PC'en skal forblive taendt og uden sleep ved baggrundsdrift.
 
-- Fælles strategi-kerne til live, tør-kørsel og backtest.
-- Trend-filter: køber kun når prisen ligger over sit 50-dages glidende gennemsnit.
-- Gebyrbuffer: signaler skal være stærke nok til cirka at bære ind- og ud-gebyr.
-- Trailing stop: vindere får lov at løbe, men beskyttes efter en ny top.
-- Hard stop-loss: standard er -8 procent.
-- Cooldown efter exit, så botten ikke straks køber samme par tilbage efter et stop.
-- Paper-trading bruger nu også handelsgebyrer, så simulatoren ikke pynter på tallene.
-- Coinbase er standardbørs, men alle ccxt-børser kan bruges.
+## Et meningsfuldt foerste forloeb
 
-## Rigtig krypto med Coinbase
+1. DEMO viser deterministiske eksempelpriser, tydeligt adskilt fra virkelig performance. Tilfoej et valgfrit virtuelt EUR-beloeb under Portefolje og scan igen.
+2. Tilfoej en The Odds API-noegle under Indstillinger. AI-noegler er ikke noedvendige for beregninger.
+3. Vaelg PAPER, registrer en virtuel pulje og scan. EXPERIMENT giver WATCH/PASS. Saet strategien til PAPER for at afproeve kvalificerede signaler.
+4. Registrer paper-bets fra analysen, eller start PAPER-drift under Strategier. Risiko og priser kontrolleres igen ved hver registrering.
+5. Hent resultater i Portefolje. Automatisk settlement understottes for de eksplicit valgte almindelige fodboldligaer; oevrige sportsgrene/resultater registreres manuelt. Ingen tilfaeldige udfald bruges i sportsjournalen.
+6. CLV kraever faktisk observerede priser lige foer kampstart. Manglende lukkepriser forbliver tomme. Et 15-minutters scaninterval kan derfor ofte mangle CLV; dataindsamling skal planlaegges og budgetteres derefter.
 
-Appen opbevarer ikke penge. Du indbetaler til din egen Coinbase-konto, og botten handler med saldoen via en API-nøgle.
+DEMO, PAPER og REAL har egne puljer, positioner og resultater. Ingen saldo er automatisk sat til 200 EUR. Tilfoej pulje er kun regnskab; siden modtager ikke crypto eller penge.
 
-Sikkerhedsreglen er enkel: opret API-nøglen med handelstilladelse, men aldrig udbetaling/withdraw. Så kan appen ikke flytte penge ud af kontoen.
+## Den kvantitative metode
 
-Eksempel:
+Komplette 2-/3-vejs h2h-markeder med eksakte event-/udfaldsidentiteter. Alle gyldige bookmakerpriser bevares, inklusive source, received_at og last_update. Ukomplette, mistaenkelige, fremtidige og for gamle priser afvises eller saettes i karantaene. Exchanges uden modelleret kommission/likviditet bruges ikke.
+
+Marginfjernelse: proportional, power og Shin. Power er den forhaandsvalgte reference; de andre bruges til foelsomhed. Det er et modelvalg, ikke en dokumenteret universel forbedring. Eksempelberegninger er kontrolleret mod [implied-pakkens dokumentation](https://cran.mirror.garr.it/mirrors/CRAN/web/packages/implied/vignettes/introduction.html).
+
+Markedskonsensus udelukker den bookmaker, der tilbyder den analyserede pris. En eksperimentel Poisson-model kan bruge importerede fodboldresultater, men kun resultater som var tilgaengelige foer beslutningen. Ingen skader, nyheder, opstillinger eller statistikker opfindes.
+
+EV per indsatsenhed = p * decimalodds - 1. Fair odds = 1/p. Minimumsodds bruger konservativ p og kraever 2% EV. Kelly-score = 100 * fuld Kelly ved konservativ p, **ikke** en valideret sandsynlighed for profit. Usikkerhedsbufferen er metodefoelsomhed, **ikke et statistisk konfidensinterval**. Bogdaekning A-D er ikke likviditet; likviditet er ukendt.
+
+Default risiko: 1/4 Kelly; maks. 1% pr. bet, 2% pr. event, 3% pr. hold, 4% pr. liga, 5% pr. sport/dag, 10% samlet og 100 aabne bets. Samme event/hold behandles konservativt som koncentreret eksponering. Ingen martingale eller tabsjagt.
+
+REAL/LIVE for sport kraever mindst 500 provider-afgjorte PAPER-bets i den aktuelle model/strategiversion, mindst 100 CLV-observationer, positiv gennemsnitlig CLV, positiv nedre cluster-bootstrap ROI-graense og Brier mindst paa niveau med markedet. Denne adgangsport beviser ikke fremtidig profit. REAL er stadig manuel registrering, ingen sportsbook-integration.
+
+## Resultater og evaluering
+
+Den gamle /api/backtest med syntetiske priser er pensioneret (HTTP 410). Strategilab bruger importerede, daterede data og giver ingen profitgaranti.
+
+- Uforanderlige odds-snapshots og beslutninger i data/ddm.sqlite3. Settlement kan ikke overskrives; annullering refunderer indsatsen.
+- CLV = taget decimalodds / samme bookmakers observerede lukkeodds - 1. Det er pris-CLV, ikke no-vig EV. Kun faktisk indsamlede quotes hoejst 300 sekunder foer kampstart bruges.
+- Brier, log loss og ECE paa foerste pre-match signal per kamp/udfald/model, ogsaa WATCH/PASS. BET-performance vises separat. Multiklasse-Brier fra strategilab har en anden skala end binaer selection-Brier.
+- ROI-intervaller resampler event-clustre ved mindst 30 afgjorte events. Korrelationsafhaengighed mellem forskellige kampe er stadig en begraensning.
+- Indbetalinger er ikke profit. Equity-kurven bruger de faktiske regnskabstidspunkter; drawdown korrigeres for tilfoert kapital.
+- Monte Carlo er betinget paa modelsandsynligheder. Samme events udfald er gensidigt udelukkende, forskellige events antages uafhaengige. Modelfejl og ukendt korrelation kan goere den virkelige risiko stoerre.
+- Historik er soegbar, sorterbar, pagineret og kan eksporteres som CSV. Gemte visninger findes lokalt i browseren.
+
+## Historiske data og strategilab
+
+Resultat-CSV bruger: id, league, home, away, start, available_at, home_goals, away_goals, source. Tider skal vaere UTC-tal eller ISO8601 med tidszone. available_at er tidspunktet, hvor resultatet faktisk blev tilgaengeligt, ikke blot kickoff.
+
+Historisk odds-JSON bruger The Odds API-eventformat plus received_at. Event-id, hold, liga og kampstart skal matche resultaterne. Odds observeret efter start afvises. API-formatet foelger [udbyderens dokumentation](https://the-odds-api.com/liveapi/guides/v4/).
+
+Mindst 300 resultater kraeves; en realistisk liga kan behoeve mange flere for at opfylde minimumshistorik pr. hold. Split er kronologisk 60/20/20. Modellen opdaterer kun med tidligere kendte resultater; isotonic kalibrering fit'es kun paa validation og rapporteres paa holdout. Den aktiveres ikke automatisk i runtime.
+
+Replay bruger seneste observerede pris mindst 60 minutter foer start; udloebne quotes afvises. Pengene frigives foerst ved available_at. Syntetiske crypto-forloeb beviser ikke en sports-edge. EV-undergrupper er kun eksplorative med train-only udvaelgelse og korrektion for fire tests; ingen automatisk LIVE-forfremmelse.
+
+Samme datasethash/model genbruger en frossen evaluering. Incrementer model-/feature-/strategiversioner ved logikaendringer. Frys et nyt, endnu uset holdout-datasaet foer nye hypoteser; software kan ikke forhindre menneskelig overfitting efter gentagen inspektion. Coverage/survivorship, tidsstempelkvalitet og manglende historiske tilbudsgraenser er uafklarede datarisici.
+
+## Nogle vigtige driftsforhold
+
+Feedbudget er 24 API-kald pr. UTC-dag som standard, faelles for odds og resultater. Det er antal forespoergsler, ikke udbyderens kreditberegning. PAPER-interval er 900 sekunder (minimum 300). Budget reserveres foer request; fejl returneres og logges uden API-noegler. Ingen demo-fallback ved feedfejl.
+
+AI er kun en valgfri manuelt startet forklaring af eksisterende data. Kvantitative beregninger bruger 0 AI-tokens. Anthropic har kallofter og forudreserveret tokenbudget; ingen web-sogning eller automatiske retries. OpenAI/Gemini bruges ikke. Provider-fakturering er ekstern; appen garanterer ikke et absolut monetart faktureringsloft.
+
+Paa Windows gemmes API-noegler DPAPI-krypteret, bundet til bruger/maskine; tidligere klartekstsettings migreres ved opstart. Zip indeholder aldrig noegler eller regnskab. Indtast noegler igen paa en anden PC. Paa andre platforme bruges miljoevariabler til noegler.
+
+## Krypto
+
+/crypto bevarer Coinbase/ccxt-motoren, men den er en **eksperimentel momentum-strategi uden dokumenteret edge**. Live kraever DDM_LIVE=1, DDM_LIVE_ARMED=JEG_FORSTAAR_RISIKOEN og boersnoegler. Boersnoegler laeses fra miljoet. Ingen withdrawals understottes.
+
+Brug noegler uden withdraw/transfer-rettigheder. Live-saldo/prisfejl stopper operationen; paper-positioner kan ikke handles som live. En ordreintention gemmes foer submission. Timeout, ukendt fee/status eller ukendt partial fill blokerer automatisk gentagelse. Ved uafklaret ordre skal du afstemme boersens historik og journalen manuelt; der er ingen automatisk reconciliation. Markedsordrer kan overskride forventet pris pga. slippage. Ingen reel ordre er valideret af vores tests.
+
+Kill switch stopper drift og bevarer usolgte positioner ved fejl. Stop overlever midnat. Appen opretter en processlaas og binder HTTP-porten foer genoptagelse af scheduler, saa en ekstra server ikke starter en ekstra handelsmotor.
+
+## Verifikation og backup
 
 ```powershell
-$env:EXCHANGE_ID = "coinbase"
-$env:EXCHANGE_API_KEY = "din-noegle"
-$env:EXCHANGE_API_SECRET = "din-secret"
-$env:DDM_LIVE = "1"
-$env:DDM_LIVE_ARMED = "JEG_FORSTAAR_RISIKOEN"
-$env:DDM_QUOTE = "EUR"
+.\.venv\Scripts\python.exe -m unittest discover -s tests
+.\.venv\Scripts\python.exe -m compileall -q app.py engine
+.\PACKAGE_DDM.ps1
 ```
 
-Nogle API-typer kræver også passphrase/password:
+Tests bruger isolerede SQLite-filer, kontrollerede historiske data og mocks; ingen rigtige vaeddemaal/boersordrer. Til backup af journalen bruges SQLite backup-API eller en lukket app; kopier ikke kun hovedfilen mens WAL er aktiv. Bevar eksisterende data/ paa samme maskine ved opgraderinger. Gamle JSON-simulationer importeres ikke til den nye sports-performance.
 
-```powershell
-$env:EXCHANGE_API_PASSPHRASE = "din-passphrase"
-```
-
-Standard-univers:
-
-```text
-BTC/EUR, ETH/EUR, SOL/EUR, ADA/EUR, LINK/EUR
-```
-
-Kan ændres med:
-
-```powershell
-$env:DDM_UNIVERSE = "BTC/EUR,ETH/EUR,SOL/EUR"
-```
-
-## Indbetaling
-
-Fanen Indbetal kan hente en deposit-adresse fra børsen, hvis din API-nøgle har funding/deposit-adgang. Du kan også finde adressen manuelt i Coinbase under indbetaling/deposit.
-
-Brug altid korrekt netværk for den coin du sender. Forkert netværk kan betyde tabte midler.
-
-## Strategi-parametre
-
-Alle kan justeres uden kodeændringer:
-
-```powershell
-$env:DDM_FEE = "0.006"
-$env:DDM_TREND_LEN = "50"
-$env:DDM_STOP_LOSS = "-0.08"
-$env:DDM_TRAIL = "0.12"
-$env:DDM_ARM = "0.05"
-$env:DDM_COOLDOWN_SECONDS = "21600"
-```
-
-Legacy `SMARTSTAKE_*` miljøvariabler virker stadig, men `DDM_*` er det nye navn.
-
-## Nattekørsel
-
-Hvis målet er at starte botten om aftenen og se resultatet om morgenen:
-
-1. Start appen.
-2. Log ind.
-3. Kør Preflight i dashboardet.
-4. Tjek at den siger klar til live-handel.
-5. Start Autonom drift med Auto-trader slået til.
-6. Lad PC'en være tændt, på strøm og uden sleep.
-
-Risikobremsen stopper nye køb hvis puljen rammer standardgrænserne:
-
-```powershell
-$env:DDM_DAILY_LOSS_LIMIT = "-0.05"        # stop ved -5% på dagen
-$env:DDM_TOTAL_LOSS_LIMIT = "-0.10"        # stop ved -10% samlet
-$env:DDM_AUTO_FLATTEN_ON_HALT = "1"        # luk åbne positioner når loft rammes
-```
-
-Hvis bremsen rammes, kan den ophæves manuelt i dashboardet. Det bør kun gøres efter du har set hvorfor den stoppede.
-
-Til første live-test er standardprofilen bevidst lille:
-
-- maks 25 EUR pr. live-køb
-- maks 2 køb pr. dag
-- maks 2 åbne positioner
-- canary-mode: første live-køb maks 10 EUR
-
-Det kan ændres i Settings, men lad det gerne være konservativt første nat.
-
-## Sport og gambling
-
-Sportsdelen er kun anbefalinger/simulering. Bettingsider har typisk ikke lovlige offentlige APIs til auto-betting, og bots kan bryde vilkår. Brug ROFUS hvis spil bliver et problem.
-
-## Settings og AI-nøgler
-
-Fanen Settings kan gemme lokale API-nøgler i `data/settings.json`. Filen er git-ignoreret og kommer ikke med i zip-pakken.
-
-Krypto-botten bruger **0 AI-tokens**. Den køber/sælger ud fra markedsdata, trendfilter, trailing stop og risikostyring.
-
-AI-research er slået fra som standard. Hvis du slår det til for sport/gamble-scouting, stopper appen automatisk ved dine grænser:
-
-- max AI-kald pr. dag
-- tokenbudget pr. dag
-- web-søgning til/fra
-- max output pr. kald
-
-OpenAI og Gemini kan gemmes i Settings, men bruges ikke af motoren endnu. De kan derfor ikke bruge tokens i den nuværende version.
-
-Der kan stadig opstå små afvigelser mellem appens tokenoptælling og udbyderens fakturering. Sæt derfor også gerne spending limits hos AI-udbyderen selv, hvis de tilbyder det.
-
-Aktivt understøttet lige nu:
-
-- `ANTHROPIC_API_KEY`: Claude AI-research til sport.
-- `ODDS_API_KEY`: live sports-odds.
-
-Kan gemmes til senere udvidelser, men bruges ikke af motoren endnu:
-
-- `OPENAI_API_KEY`
-- `GEMINI_API_KEY`
-
-Krypto-botten kræver ikke AI-nøgler. Den bruger Coinbase/ccxt API-nøgler til read + trade.
-
-## Test
-
-```powershell
-python -m unittest discover -s tests
-```
-
-Testene dækker Kelly-matematik, allokering, atomisk JSON-persistens og auto-traderens tør-kørselslivscyklus med trailing stop.
+Se docs/ARCHITECTURE.md for audit, modulansvar og praecise begraensninger.

@@ -122,20 +122,16 @@ class TestPolymarket(unittest.TestCase):
         # Uden AI = markedets egne priser = nul edge (ærligt, som ved sport)
         self.assertEqual(polymarket.find_opportunities(use_ai=False), [])
 
-    def test_ai_divergence_creates_ranked_value(self):
-        # AI mener 70% hvor markedet siger 60% -> value på "Ja"
+    def test_unvalidated_ai_cannot_create_value(self):
+        # Arbitrary LLM probabilities must never become financial signals.
         polymarket.research.estimate_probabilities = lambda m, fair, o: [0.70, 0.30]
         opps = polymarket.find_opportunities(use_ai=True)
-        self.assertEqual(len(opps), 1)
-        self.assertIn("Ja", opps[0]["name"])
-        self.assertAlmostEqual(opps[0]["value"], 0.70 / 0.60 - 1, places=6)
-        self.assertGreater(opps[0]["kelly_fraction"], 0)
+        self.assertEqual(opps, [])
 
     def test_allocator_accepts_polymarket(self):
         polymarket.research.estimate_probabilities = lambda m, fair, o: [0.70, 0.30]
         actions = allocator.allocate(1000, polymarket.find_opportunities(use_ai=True))
-        self.assertEqual(len(actions), 1)
-        self.assertGreater(actions[0]["stake_dkk"], 0)
+        self.assertEqual(actions, [])
 
 
 class TestNotify(unittest.TestCase):

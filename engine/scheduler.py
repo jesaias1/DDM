@@ -16,7 +16,7 @@ import os
 import time
 import threading
 
-from . import autotrader, bankroll, notify, store
+from . import autotrader, bankroll, notify, store, settings
 
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "scheduler.json")
 MIN_INTERVAL = 15      # sekunder — undgå at hamre børs-API'et
@@ -25,7 +25,7 @@ DEFAULT_INTERVAL = 60
 _lock = threading.RLock()
 _thread: threading.Thread | None = None
 _stop = threading.Event()
-_runtime = {"last_run": None, "last_log": [], "error": None, "started_at": None}
+_runtime = {"last_run": None, "last_log": [], "error": None, "started_at": None, "last_sports": None}
 
 
 def _load_cfg() -> dict:
@@ -35,6 +35,7 @@ def _load_cfg() -> dict:
         "interval": max(MIN_INTERVAL, int(cfg.get("interval", DEFAULT_INTERVAL))),
         "run_live": bool(cfg.get("run_live", True)),
         "run_sim": bool(cfg.get("run_sim", False)),
+        "run_sports": bool(cfg.get("run_sports", False)),
     }
 
 
@@ -45,22 +46,30 @@ def _save_cfg(cfg: dict) -> None:
 def _one_round(cfg: dict) -> list[str]:
     """Kør de valgte motorer én gang. Fejl i én motor stopper ikke den anden."""
     log = []
+    if cfg.get("run_sports") and time.time()-(_runtime["last_sports"] or 0) >= max(300, int(settings.load().get("sports_scan_interval", 900))):
+        from . import intelligence
+        _runtime["last_sports"] = time.time()
+        try:
+            result = intelligence.paper_cycle()
+            log.append(f"[SPORT PAPER] {result['scanned']} kampe; {result['placed']} nye paper-bets")
+        except Exception as error:
+            log.append(f"sportsmotor fejlede: {type(error).__name__}: " + (str(error) if isinstance(error, ValueError) else "tjek systemstatus"))
     if cfg["run_live"]:
         try:
             r = autotrader.run_cycle()
             log.append(("[LIVE] " if r["live"] else "[TØR] ") + "; ".join(r["log"]))
         except Exception as e:
-            log.append(f"auto-trader fejlede: {e}")
+            log.append(f"auto-trader fejlede: {type(e).__name__}")
     if cfg["run_sim"]:
         try:
             r = bankroll.run_cycle()
             log.append("[SIM] " + "; ".join(r["log"]))
         except Exception as e:
-            log.append(f"simulator fejlede: {e}")
+            log.append(f"simulator fejlede: {type(e).__name__}")
     try:
         notify.maybe_daily_report()  # daglig mobil-status; fejler stille
     except Exception as e:
-        print(f"[scheduler] daglig besked fejlede: {e}")
+        print(f"[scheduler] daglig besked fejlede: {type(e).__name__}")
     return log
 
 
@@ -72,27 +81,31 @@ def _loop() -> None:
             with _lock:
                 _runtime["last_run"] = int(time.time())
                 _runtime["last_log"] = log
-                _runtime["error"] = None
+                _runtime["error"] = "\n".join(line for line in log if "fejlede" in line) or None
         except Exception as e:  # backstop — bør aldrig ske, men holder tråden i live
             with _lock:
-                _runtime["error"] = str(e)
+                _runtime["error"] = type(e).__name__
         # vent intervallet, men reagér hurtigt på stop
         _stop.wait(_load_cfg()["interval"])
 
 
 def start(interval: int = DEFAULT_INTERVAL, run_live: bool = True,
-          run_sim: bool = False) -> dict:
+          run_sim: bool = False, run_sports: bool = False) -> dict:
     """Start (eller genkonfigurér) den autonome loop."""
     global _thread
     with _lock:
         cfg = {"running": True, "interval": max(MIN_INTERVAL, int(interval)),
-               "run_live": bool(run_live), "run_sim": bool(run_sim)}
+               "run_live": bool(run_live), "run_sim": bool(run_sim), "run_sports": bool(run_sports)}
         _save_cfg(cfg)
         _runtime["started_at"] = int(time.time())
         if _thread is None or not _thread.is_alive():
             _stop.clear()
             _thread = threading.Thread(target=_loop, daemon=True, name="smartstake-scheduler")
             _thread.start()
+        elif _stop.is_set():
+            cfg["running"] = False
+            _save_cfg(cfg)
+            raise ValueError("Forrige cyklus stopper stadig; vent paa afslutning")
     return status()
 
 
@@ -104,7 +117,7 @@ def stop() -> dict:
         cfg["running"] = False
         _save_cfg(cfg)
         _stop.set()
-        _thread = None
+        # Keep the thread reference until it exits; never spawn a second live loop.
     return status()
 
 
@@ -120,6 +133,8 @@ def status() -> dict:
         "interval": cfg["interval"],
         "run_live": cfg["run_live"],
         "run_sim": cfg["run_sim"],
+        "run_sports": cfg["run_sports"],
+        "last_sports": _runtime["last_sports"],
         "last_run": last_run,
         "next_run": next_run,
         "last_log": last_log,
@@ -131,4 +146,4 @@ def resume_if_enabled() -> None:
     """Kaldes ved server-opstart: genoptag loopet hvis det var slået til."""
     cfg = _load_cfg()
     if cfg["running"]:
-        start(cfg["interval"], cfg["run_live"], cfg["run_sim"])
+        start(cfg["interval"], cfg["run_live"], cfg["run_sim"], cfg["run_sports"])
